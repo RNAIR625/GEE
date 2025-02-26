@@ -1,0 +1,86 @@
+<!-- templates/base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %}</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --success-color: #2ecc71;
+        }
+
+        body {
+            background-color: #f5f6fa;
+        }
+
+        .sidebar {
+            background-color: var(--primary-color);
+            height: 100vh;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+
+        .sidebar-item {
+            padding: 12px 15px;
+            margin: 5px 0;
+            border-radius: 5px;
+            color: white;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: block;
+        }
+
+        .sidebar-item:hover {
+            background-color: var(--accent-color);
+            transform: translateX(5px);
+            color: white;
+            text-decoration: none;
+        }
+
+        .sidebar-item.active {
+            background-color: var(--accent-color);
+            color: white;
+            text-decoration: none;
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        {% block additional_styles %}{% endblock %}
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-2 sidebar">
+                <!-- Important: Using actual <a> tags with href attributes -->
+                <a href="{{ url_for('class_page') }}" class="sidebar-item {% if active_page == 'class' %}active{% endif %}">Class</a>
+                <a href="{{ url_for('fields') }}" class="sidebar-item {% if active_page == 'fields' %}active{% endif %}">Fields</a>
+                <a href="{{ url_for('function_page') }}" class="sidebar-item {% if active_page == 'function' %}active{% endif %}">Function</a>
+                <a href="#" class="sidebar-item">Rules Group</a>
+                <a href="#" class="sidebar-item">Rules</a>
+                <a href="#" class="sidebar-item">Tables</a>
+                <a href="#" class="sidebar-item">ENV CONFIG</a>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-10 main-content">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    {% block modals %}{% endblock %}
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
