@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}Function Flow Designer{% endblock %}
+
+{% block additional_styles %}
+.flow-canvas {
+    background-size: 20px 20px;
+    background-image: radial-gradient(circle, #ddd 1px, transparent 1px);
+    background-position: 0 0;
+    height: calc(100vh - 120px);
+    position: relative;
+    overflow: auto;
+}
+  
+.draggable-component {
+    cursor: grab;
+}
+  
+.component-node {
+    position: absolute;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+    border-radius: 4px;
+    z-index: 1;
+}
+  
+.rule-node {
+    background-color: #3498db;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+  
+.rule-group-node {
+    width: 200px;
+}
+  
+.rule-group-header {
+    background-color: #2ecc71;
+    color: white;
+    padding: 8px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    font-weight: 500;
+}
+  
+.rule-group-content {
+    background-color: #f1f9f1;
+    padding: 10px;
+    min-height: 50px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+  
+.station-node {
+    width: 240px;
+}
+  
+.station-header {
+    background-color: #9b59b6;
+    color: white;
+    padding: 10px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    font-weight: 500;
+}
+  
+.station-content {
+    background-color: #f5f0f7;
+    padding: 12px;
+    min-height: 80px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+  
+.connector-line {
+    stroke: #666;
+    stroke-width: 2px;
+    fill: none;
+}
+  
+.selected-node {
+    outline: 2px solid #3498db;
+}
+{% endblock %}
+
+{% block content %}
+<!-- Top Navigation Bar -->
+<div class="bg-white shadow-sm p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <h2 class="mb-0">Function Flow Designer</h2>
+        <div class="d-flex gap-2">
+            <button id="validateBtn" class="btn btn-outline-primary">Validate</button>
+            <button id="importBtn" class="btn btn-outline-primary">Import</button>
+            <button id="exportBtn" class="btn btn-outline-primary">Export</button>
+            <button id="saveBtn" class="btn btn-success">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content Area -->
+<div class="d-flex h-100">
+    <!-- Left Sidebar - Component Palette -->
+    <div class="bg-dark text-white p-3" style="width: 250px;">
+        <h5 class="mb-3">Components</h5>
+        
+        <!-- Search Box -->
+        <div class="mb-3">
+            <input type="text" id="search-components" placeholder="Search components..." class="form-control form-control-sm">
+        </div>
+        
+        <!-- Rules Section -->
+        <div class="mb-4">
+            <h6 class="text-light-emphasis">Rules</h6>
+            <div class="d-flex flex-column gap-2">
+                <div class="bg-primary text-white p-2 rounded draggable-component" draggable="true" data-component-type="rule" data-component-id="1">
+                    Validate Email
+                </div>
+                <div class="bg-primary text-white p-2 rounded draggable-component" draggable="true" data-component-type="rule" data-component-id="2">
+                    Calculate Total
+                </div>
+                <div class="bg-primary text-white p-2 rounded draggable-component" draggable="true" data-component-type="rule" data-component-id="3">
+                    Format Address
+                </div>
+            </div>
+        </div>
+        
+        <!-- Rule Groups Section -->
+        <div class="mb-4">
+            <h6 class="text-light-emphasis">Rule Groups</h6>
+            <div class="d-flex flex-column gap-2">
+                <div class="bg-success text-white p-2 rounded draggable-component" draggable="true" data-component-type="rule-group" data-component-id="1">
+                    Validation Group
+                </div>
+                <div class="bg-success text-white p-2 rounded draggable-component" draggable="true" data-component-type="rule-group" data-component-id="2">
+                    Calculation Group
+                </div>
+            </div>
+        </div>
+        
+        <!-- Stations Section -->
+        <div class="mb-4">
+            <h6 class="text-light-emphasis">Stations</h6>
+            <div class="d-flex flex-column gap-2">
+                <div class="bg-purple text-white p-2 rounded draggable-component" draggable="true" data-component-type="station" data-component-id="1" style="background-color: #9b59b6;">
+                    Input Processing
+                </div>
+                <div class="bg-purple text-white p-2 rounded draggable-component" draggable="true" data-component-type="station" data-component-id="2" style="background-color: #9b59b6;">
+                    Output Generation
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Canvas -->
+    <div id="flow-canvas" class="flex-grow-1 position-relative flow-canvas">
+        <!-- Canvas content will be populated by JavaScript -->
+        
+        <!-- SVG container for connections -->
+        <svg id="connections-container" class="position-absolute top-0 left-0 w-100 h-100" style="pointer-events: none;">
+            <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#666" />
+                </marker>
+            </defs>
+            <!-- Connection paths will be added dynamically -->
+        </svg>
+    </div>
+    
+    <!-- Right Sidebar - Properties Panel -->
+    <div class="bg-light border-start p-3" style="width: 300px;">
+        <h5 class="mb-3">Properties</h5>
+        
+        <!-- No Selection Message -->
+        <div id="no-selection" class="bg-white rounded shadow p-4 text-center text-muted">
+            <i class="fas fa-info-circle fa-2x mb-2"></i>
+            <p>Select a component to view its properties</p>
+        </div>
+        
+        <!-- Component Properties Form (Hidden by default) -->
+        <div id="component-properties" class="bg-white rounded shadow p-3" style="display: none;">
+            <h6 id="property-title" class="border-bottom pb-2 mb-3">Component Properties</h6>
+            
+            <div class="mb-3">
+                <label class="form-label">Name</label>
+                <input type="text" id="property-name" class="form-control">
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Type</label>
+                <select id="property-type" class="form-select">
+                    <option value="action">Action</option>
+                    <option value="condition">Condition</option>
+                </select>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Description</label>
+                <textarea id="property-description" class="form-control" rows="3"></textarea>
+            </div>
+            
+            <div class="d-flex justify-content-end">
+                <button id="apply-properties" class="btn btn-primary">
+                    Apply Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Save Flow Modal -->
+<div id="save-modal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Save Flow</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Flow Name</label>
+                    <input type="text" id="flow-name" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Description</label>
+                    <textarea id="flow-description" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-save" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button id="confirm-save" class="btn btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/flow_designer.js') }}"></script>
+{% endblock %}

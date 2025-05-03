@@ -1,0 +1,210 @@
+// Flow Designer JavaScript
+
+// Global variables
+let flowCanvas;
+let connectionsContainer;
+let components = [];
+let connections = [];
+let selectedComponent = null;
+let isDragging = false;
+let isConnecting = false;
+let connectionSource = null;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+let currentFlowId = null;
+let flowVersion = 1;
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Get canvas and SVG container
+    flowCanvas = document.getElementById('flow-canvas');
+    connectionsContainer = document.getElementById('connections-container');
+    
+    // Set up canvas event listeners
+    flowCanvas.addEventListener('click', handleCanvasClick);
+    
+    // Set up component drag events
+    setupDraggableComponents();
+    
+    // Set up buttons
+    document.getElementById('saveBtn').addEventListener('click', openSaveModal);
+    document.getElementById('validateBtn').addEventListener('click', validateFlow);
+    document.getElementById('importBtn').addEventListener('click', importFlow);
+    document.getElementById('exportBtn').addEventListener('click', exportFlow);
+    
+    // Save modal buttons
+    document.getElementById('cancel-save').addEventListener('click', function() {
+        document.getElementById('save-modal').classList.add('hidden');
+    });
+    
+    document.getElementById('confirm-save').addEventListener('click', saveFlow);
+    
+    // Apply property changes button
+    document.getElementById('apply-properties').addEventListener('click', applyPropertyChanges);
+});
+
+// Setup draggable components
+function setupDraggableComponents() {
+    const draggables = document.querySelectorAll('.draggable-component');
+    
+    draggables.forEach(item => {
+        item.addEventListener('dragstart', handleDragStart);
+    });
+    
+    // Canvas drop area
+    flowCanvas.addEventListener('dragover', function(e) {
+        e.preventDefault();
+    });
+    
+    flowCanvas.addEventListener('drop', handleDrop);
+}
+
+// Handle drag start
+function handleDragStart(e) {
+    const componentType = e.target.getAttribute('data-component-type');
+    const componentId = e.target.getAttribute('data-component-id');
+    
+    e.dataTransfer.setData('application/json', JSON.stringify({
+        type: componentType,
+        id: componentId,
+        label: e.target.textContent.trim()
+    }));
+}
+
+// Handle drop on canvas
+function handleDrop(e) {
+    e.preventDefault();
+    
+    const data = JSON.parse(e.dataTransfer.getData('application/json'));
+    const rect = flowCanvas.getBoundingClientRect();
+    
+    // Calculate position relative to canvas
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    createComponent(data.type, data.id, data.label, x, y);
+}
+
+// Create component on canvas
+function createComponent(type, refId, label, x, y) {
+    const id = generateUniqueId();
+    let component;
+    
+    switch(type) {
+        case 'rule':
+            component = createRuleNode(id, refId, label, x, y);
+            break;
+        case 'rule-group':
+            component = createRuleGroupNode(id, refId, label, x, y);
+            break;
+        case 'station':
+            component = createStationNode(id, refId, label, x, y);
+            break;
+        default:
+            console.error('Unknown component type:', type);
+            return;
+    }
+    
+    // Add to components array
+    components.push({
+        id: id,
+        type: type,
+        refId: refId,
+        element: component,
+        x: x,
+        y: y,
+        label: label
+    });
+    
+    // Add to canvas
+    flowCanvas.appendChild(component);
+    
+    // Add event listeners
+    setupComponentEvents(component, id);
+}
+
+// Create rule node element
+function createRuleNode(id, refId, label, x, y) {
+    const node = document.createElement('div');
+    node.className = 'component-node rule-node';
+    node.setAttribute('data-id', id);
+    node.setAttribute('data-ref-id', refId);
+    node.style.left = `${x}px`;
+    node.style.top = `${y}px`;
+    node.textContent = label;
+    
+    return node;
+}
+
+// Create rule group node element
+function createRuleGroupNode(id, refId, label, x, y) {
+    const node = document.createElement('div');
+    node.className = 'component-node rule-group-node';
+    node.setAttribute('data-id', id);
+    node.setAttribute('data-ref-id', refId);
+    node.style.left = `${x}px`;
+    node.style.top = `${y}px`;
+    
+    // Create header
+    const header = document.createElement('div');
+    header.className = 'rule-group-header';
+    header.textContent = label;
+    
+    // Create content
+    const content = document.createElement('div');
+    content.className = 'rule-group-content';
+    content.textContent = 'Drag rules here';
+    
+    // Add to node
+    node.appendChild(header);
+    node.appendChild(content);
+    
+    return node;
+}
+
+// Create station node element
+function createStationNode(id, refId, label, x, y) {
+    const node = document.createElement('div');
+    node.className = 'component-node station-node';
+    node.setAttribute('data-id', id);
+    node.setAttribute('data-ref-id', refId);
+    node.style.left = `${x}px`;
+    node.style.top = `${y}px`;
+    
+    // Create header
+    const header = document.createElement('div');
+    header.className = 'station-header';
+    header.textContent = label;
+    
+    // Create content
+    const content = document.createElement('div');
+    content.className = 'station-content';
+    content.textContent = 'Drag rule groups here';
+    
+    // Add to node
+    node.appendChild(header);
+    node.appendChild(content);
+    
+    return node;
+}
+
+// Setup component events
+function setupComponentEvents(component, id) {
+    // Click to select
+    component.addEventListener('click', function(e) {
+        e.stopPropagation();
+        selectComponent(id);
+    });
+    
+    // Double click to start connection
+    component.addEventListener('dblclick', function(e) {
+        e.stopPropagation();
+        if (!isConnecting) {
+            startConnection(id);
+        } else {
+            endConnection(id);
+        }
+    });
+    
+    // Mouse down to start drag
+    component.addEventListener('mousedown', function

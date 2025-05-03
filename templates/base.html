@@ -1,12 +1,12 @@
-<!-- templates/base.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}{% endblock %}</title>
+    <title>{% block title %}SLEP Flow Manager{% endblock %}</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
     <style>
         :root {
             --primary-color: #2c3e50;
@@ -53,22 +53,48 @@
             padding: 30px;
         }
 
+        .app-title {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
         {% block additional_styles %}{% endblock %}
     </style>
 </head>
 <body>
-    <div class="container-fluid">
-        <div class="row">
+    <div class="container-fluid p-0">
+        <div class="row g-0">
             <!-- Sidebar -->
             <div class="col-2 sidebar">
-                <!-- Important: Using actual <a> tags with href attributes -->
-                <a href="{{ url_for('class_page') }}" class="sidebar-item {% if active_page == 'class' %}active{% endif %}">Class</a>
-                <a href="{{ url_for('fields') }}" class="sidebar-item {% if active_page == 'fields' %}active{% endif %}">Fields</a>
-                <a href="{{ url_for('function_page') }}" class="sidebar-item {% if active_page == 'function' %}active{% endif %}">Function</a>
-                <a href="#" class="sidebar-item">Rules Group</a>
-                <a href="#" class="sidebar-item">Rules</a>
-                <a href="#" class="sidebar-item">Tables</a>
-                <a href="#" class="sidebar-item">ENV CONFIG</a>
+                <div class="app-title">SLEP Flow Manager</div>
+                <a href="{{ url_for('home') }}" class="sidebar-item {% if active_page == 'home' %}active{% endif %}">
+                    <i class="fas fa-home me-2"></i>Dashboard
+                </a>
+                <a href="{{ url_for('class_page') }}" class="sidebar-item {% if active_page == 'class' %}active{% endif %}">
+                    <i class="fas fa-layer-group me-2"></i>Classes
+                </a>
+                <a href="{{ url_for('fields') }}" class="sidebar-item {% if active_page == 'fields' %}active{% endif %}">
+                    <i class="fas fa-list-alt me-2"></i>Fields
+                </a>
+                <a href="{{ url_for('function') }}" class="sidebar-item {% if active_page == 'function' %}active{% endif %}">
+                    <i class="fas fa-code me-2"></i>Functions
+                </a>
+                <a href="{{ url_for('rule_groups') }}" class="sidebar-item {% if active_page == 'rule_groups' %}active{% endif %}">
+                    <i class="fas fa-object-group me-2"></i>Rule Groups
+                </a>
+                <a href="{{ url_for('stations') }}" class="sidebar-item {% if active_page == 'stations' %}active{% endif %}">
+                    <i class="fas fa-project-diagram me-2"></i>Stations
+                </a>
+                <a href="{{ url_for('flow_designer') }}" class="sidebar-item {% if active_page == 'flow_designer' %}active{% endif %}">
+                    <i class="fas fa-sitemap me-2"></i>Flow Designer
+                </a>
+                <a href="#" class="sidebar-item {% if active_page == 'env_config' %}active{% endif %}">
+                    <i class="fas fa-cogs me-2"></i>ENV Config
+                </a>
             </div>
 
             <!-- Main Content -->
@@ -78,9 +104,47 @@
         </div>
     </div>
 
+    <!-- Toast notification container -->
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050">
+        <div id="toastNotification" class="toast hide" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto" id="toastTitle">Notification</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="toastMessage">
+                Operation completed successfully.
+            </div>
+        </div>
+    </div>
+
     {% block modals %}{% endblock %}
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Helper function for showing toast notifications
+        function showToast(title, message, type = 'success') {
+            const toastEl = document.getElementById('toastNotification');
+            const toast = new bootstrap.Toast(toastEl);
+            
+            document.getElementById('toastTitle').textContent = title;
+            document.getElementById('toastMessage').textContent = message;
+            
+            // Remove any existing color classes
+            toastEl.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'text-white');
+            
+            // Add appropriate color class
+            if (type === 'success') {
+                toastEl.classList.add('bg-success', 'text-white');
+            } else if (type === 'error') {
+                toastEl.classList.add('bg-danger', 'text-white');
+            } else if (type === 'warning') {
+                toastEl.classList.add('bg-warning');
+            }
+            
+            toast.show();
+        }
+    </script>
+    
     {% block scripts %}{% endblock %}
 </body>
-</html>
