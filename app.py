@@ -38,7 +38,7 @@ def init_app():
     # Create tables if they don't exist
     with app.app_context():
         conn = get_db()
-        with open('schema.sql', 'r') as f:
+        with open('SQLiteTableCreate.sql', 'r') as f:
             conn.executescript(f.read())
         conn.commit()
 
@@ -408,6 +408,495 @@ def save_flow():
         return jsonify({'success': True, 'message': 'Flow saved successfully!', 'flowId': flow_id})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
+
+
+# Tables Management Starts
+
+
+# Updated Tables routes and functionality for app.py
+
+@app.route('/tables')
+def tables():
+    return render_template('tables.html', active_page='tables')
+
+@app.route('/get_tables', methods=['GET'])
+def get_tables():
+    conn_handle = request.args.get('connection_handle', None)
+    
+    try:
+        if conn_handle:
+            # Get active connection details
+            active_connections = query_db('SELECT * FROM GEE_ACTIVE_CONNECTIONS WHERE HANDLE = ?', 
+                                         (conn_handle,), one=True)
+            if active_connections:
+                # Get config details
+                config_id = active_connections['CONFIG_ID']
+                env_config = query_db('SELECT * FROM GEE_ENV_CONFIG WHERE GT_ID = ?', 
+                                     (config_id,), one=True)
+                
+                if env_config:
+                    # Connect to external database based on type
+                    if env_config['DB_TYPE'] == 'SQLite':
+                        ext_conn = sqlite3.connect(env_config['DB_NAME'])
+                        ext_conn.row_factory = sqlite3.Row
+                        ext_cursor = ext_conn.cursor()
+                        
+                        # Get table list from the external database
+                        ext_cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+                        ext_tables = ext_cursor.fetchall()
+                        
+                        # Format for response
+                        tables_list = []
+                        for table in ext_tables:
+                            tables_list.append({
+                                'GEC_ID': None,
+                                'TABLE_NAME': table[0],
+                                'TABLE_TYPE': 'EXTERNAL',
+                                'QUERY': f"SELECT * FROM {table[0]}",
+                                'DESCRIPTION': f"External table from {env_config['ENV_NAME']}",
+                                'SOURCE': conn_handle,
+                                'CREATE_DATE': datetime.now(),
+                                'UPDATE_DATE': None,
+                                'IS_IMPORTABLE': True
+                            })
+                        
+                        ext_conn.close()
+                        return jsonify(tables_list)
+                    
+                    elif env_config['DB_TYPE'] == 'Oracle' or env_config['DB_TYPE'] == 'Postgres':
+                        # For demo, return placeholder message - in production, implement actual connections
+                        return jsonify([{
+                            'GEC_ID': None,
+                            'TABLE_NAME': 'Database connection not implemented',
+                            'TABLE_TYPE': 'EXTERNAL',
+                            'QUERY': '',
+                            'DESCRIPTION': f"External {env_config['DB_TYPE']} connection not yet implemented",
+                            'SOURCE': conn_handle,
+                            'CREATE_DATE': datetime.now(),
+                            'UPDATE_DATE': None,
+                            'IS_IMPORTABLE': False
+                        }])
+        
+        # If no connection handle or connection not found, return internal tables
+        tables = query_db('SELECT * FROM GEE_TABLES')
+        return jsonify([dict(table) for table in tables])
+    
+    except Exception as e:
+        app.logger.error(f"Error in get_tables: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify([]), 500
+
+@app.route('/get_active_connections_for_tables')
+def get_active_connections_for_tables():
+    try:
+        connections = {}
+        active_conns = query_db('SELECT * FROM GEE_ACTIVE_CONNECTIONS')
+        
+        for conn in active_conns:
+            # Get environment name for each connection
+            config = query_db('SELECT ENV_NAME, DB_TYPE FROM GEE_ENV_CONFIG WHERE GT_ID = ?', 
+                            (conn['CONFIG_ID'],), one=True)
+            
+            connections[conn['HANDLE']] = {
+                'config_id': conn['CONFIG_ID'],
+                'created': conn['CREATED'],
+                'status': conn['STATUS'],
+                'env_name': config['ENV_NAME'] if config else 'Unknown',
+                'db_type': config['DB_TYPE'] if config else 'Unknown'
+            }
+        
+        return jsonify(connections)
+    except Exception as e:
+        app.logger.error(f"Error getting active connections: {str(e)}")
+        return jsonify({})
+
+@app.route('/add_table', methods=['POST'])
+def add_table():
+    data = request.json
+    try:
+        modify_db(
+            'INSERT INTO GEE_TABLES (TABLE_NAME, TABLE_TYPE, QUERY, DESCRIPTION) VALUES (?, ?, ?, ?)',
+            (data['tableName'], data['tableType'], data['query'], data['description'])
+        )
+        return jsonify({'success': True, 'message': 'Table added successfully!'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/update_table', methods=['PUT'])
+def update_table():
+    data = request.json
+    try:
+        modify_db(
+            'UPDATE GEE_TABLES SET TABLE_NAME = ?, TABLE_TYPE = ?, QUERY = ?, DESCRIPTION = ?, UPDATE_DATE = ? WHERE GEC_ID = ?',
+            (data['tableName'], data['tableType'], data['query'], data['description'], datetime.now(), data['gecId'])
+        )
+        return jsonify({'success': True, 'message': 'Table updated successfully!'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/delete_table/<int:gec_id>', methods=['DELETE'])
+def delete_table(gec_id):
+    try:
+        modify_db('DELETE FROM GEE_TABLES WHERE GEC_ID = ?', (gec_id,))
+        return jsonify({'success': True, 'message': 'Table deleted successfully!'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/test_query', methods=['POST'])
+def test_query():
+    data = request.json
+    query = data.get('query', '')
+    conn_handle = data.get('connection_handle', None)
+    
+    if not query or not query.strip().upper().startswith('SELECT'):
+        return jsonify({
+            'success': False, 
+            'message': 'Only SELECT queries are allowed for testing'
+        })
+    
+    try:
+        # If using external connection
+        if conn_handle:
+            active_conn = query_db('SELECT * FROM GEE_ACTIVE_CONNECTIONS WHERE HANDLE = ?', 
+                                  (conn_handle,), one=True)
+            
+            if active_conn:
+                config_id = active_conn['CONFIG_ID']
+                env_config = query_db('SELECT * FROM GEE_ENV_CONFIG WHERE GT_ID = ?', 
+                                     (config_id,), one=True)
+                
+                if env_config and env_config['DB_TYPE'] == 'SQLite':
+                    # Connect to external SQLite database
+                    ext_conn = sqlite3.connect(env_config['DB_NAME'])
+                    ext_conn.row_factory = sqlite3.Row
+                    
+                    # Limit the number of rows returned for safety
+                    if 'LIMIT' not in query.upper():
+                        if query.strip().endswith(';'):
+                            query = query[:-1] + ' LIMIT 10;'
+                        else:
+                            query = query + ' LIMIT 10;'
+                            
+                    # Execute query on external database
+                    ext_cursor = ext_conn.cursor()
+                    ext_cursor.execute(query)
+                    results = ext_cursor.fetchall()
+                    
+                    # Get column names
+                    columns = [description[0] for description in ext_cursor.description]
+                    
+                    # Format results
+                    formatted_results = []
+                    for row in results:
+                        row_dict = {}
+                        for i, col in enumerate(columns):
+                            row_dict[col] = row[i]
+                        formatted_results.append(row_dict)
+                    
+                    ext_conn.close()
+                    
+                    return jsonify({
+                        'success': True, 
+                        'message': 'Query executed successfully on external database',
+                        'columns': columns,
+                        'data': formatted_results
+                    })
+                else:
+                    return jsonify({
+                        'success': False,
+                        'message': f"Connection to {env_config['DB_TYPE'] if env_config else 'unknown'} database not implemented"
+                    })
+        
+        # Default: Execute on internal database
+        # Limit the number of rows returned for safety
+        if 'LIMIT' not in query.upper():
+            if query.strip().endswith(';'):
+                query = query[:-1] + ' LIMIT 10;'
+            else:
+                query = query + ' LIMIT 10;'
+                
+        results = query_db(query)
+        columns = results[0].keys() if results else []
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Query executed successfully',
+            'columns': list(columns),
+            'data': [dict(row) for row in results]
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error executing query: {str(e)}'})
+
+@app.route('/import_table_structure', methods=['POST'])
+def import_table_structure():
+    data = request.json
+    conn_handle = data.get('connection_handle')
+    table_name = data.get('table_name')
+    
+    if not conn_handle or not table_name:
+        return jsonify({'success': False, 'message': 'Connection handle and table name are required'})
+    
+    try:
+        # Get the connection details
+        active_conn = query_db('SELECT * FROM GEE_ACTIVE_CONNECTIONS WHERE HANDLE = ?', 
+                              (conn_handle,), one=True)
+        
+        if not active_conn:
+            return jsonify({'success': False, 'message': 'Connection not found'})
+        
+        config_id = active_conn['CONFIG_ID']
+        env_config = query_db('SELECT * FROM GEE_ENV_CONFIG WHERE GT_ID = ?', 
+                            (config_id,), one=True)
+        
+        if not env_config:
+            return jsonify({'success': False, 'message': 'Environment configuration not found'})
+        
+        # Connect to the external database
+        if env_config['DB_TYPE'] == 'SQLite':
+            ext_conn = sqlite3.connect(env_config['DB_NAME'])
+            ext_conn.row_factory = sqlite3.Row
+            
+            # Get the table structure
+            ext_cursor = ext_conn.cursor()
+            ext_cursor.execute(f"PRAGMA table_info({table_name})")
+            columns = ext_cursor.fetchall()
+            
+            # Create a query to fetch data
+            query = f"SELECT * FROM {table_name}"
+            
+            # Store in GEE_TABLES
+            modify_db(
+                'INSERT INTO GEE_TABLES (TABLE_NAME, TABLE_TYPE, QUERY, DESCRIPTION) VALUES (?, ?, ?, ?)',
+                (table_name, 'I', query, f'Imported from {env_config["ENV_NAME"]}')
+            )
+            
+            # Get the new table ID
+            new_table = query_db('SELECT GEC_ID FROM GEE_TABLES WHERE TABLE_NAME = ? ORDER BY GEC_ID DESC LIMIT 1', 
+                                (table_name,), one=True)
+            
+            # Create GEE_TABLE_COLUMNS table if it doesn't exist
+            modify_db('''
+                CREATE TABLE IF NOT EXISTS GEE_TABLE_COLUMNS (
+                    COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                    GEC_ID INTEGER NOT NULL,
+                    COLUMN_NAME TEXT NOT NULL,
+                    COLUMN_TYPE TEXT NOT NULL,
+                    COLUMN_SIZE INTEGER,
+                    CREATE_DATE TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UPDATE_DATE TIMESTAMP,
+                    FOREIGN KEY (GEC_ID) REFERENCES GEE_TABLES(GEC_ID)
+                )
+            ''')
+            
+            # Store column definitions
+            for col in columns:
+                column_name = col['name']
+                column_type = col['type']
+                column_size = len(column_name)  # This is a simplification; in reality, you'd determine proper size
+                
+                modify_db(
+                    'INSERT INTO GEE_TABLE_COLUMNS (GEC_ID, COLUMN_NAME, COLUMN_TYPE, COLUMN_SIZE) VALUES (?, ?, ?, ?)',
+                    (new_table['GEC_ID'], column_name, column_type, column_size)
+                )
+            
+            ext_conn.close()
+            
+            # Format columns for response
+            column_list = []
+            for col in columns:
+                column_list.append({
+                    'name': col['name'],
+                    'type': col['type'],
+                    'notnull': col['notnull'],
+                    'dflt_value': col['dflt_value'],
+                    'pk': col['pk']
+                })
+            
+            return jsonify({
+                'success': True, 
+                'message': f'Table structure imported successfully for {table_name}',
+                'columns': column_list
+            })
+        else:
+            return jsonify({'success': False, 'message': f'Database type {env_config["DB_TYPE"]} not supported yet'})
+            
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error importing table structure: {str(e)}'})
+        
+        
+#Table Management Ends 
+# Environment Configuration Management
+@app.route('/env_config')
+def env_config():
+    return render_template('env_config.html', active_page='env_config')
+
+@app.route('/get_env_configs')
+def get_env_configs():
+    print("get_env_configs route was called!")
+    try:
+        configs = query_db('SELECT * FROM GEE_ENV_CONFIG')
+        print(f"Retrieved {len(configs)} environment configurations")
+        result = [dict(config) for config in configs]
+        return jsonify(result)
+    except Exception as e:
+        print(f"Error in get_env_configs: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify([])
+
+@app.route('/add_env_config', methods=['POST'])
+def add_env_config():
+    data = request.json
+    try:
+        modify_db(
+            'INSERT INTO GEE_ENV_CONFIG (ENV_NAME, DB_NAME, DB_PASSWORD, DB_INSTANCE, DB_TYPE, DB_PORT, LINUX_USER, LINUX_PASSWORD, LINUX_HOST) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            (data['envName'], data['dbName'], data['dbPassword'], data['dbInstance'], data['dbType'], 
+             data['dbPort'], data['linuxUser'], data['linuxPassword'], data['linuxHost'])
+        )
+        return jsonify({'success': True, 'message': 'Environment configuration added successfully!'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/update_env_config', methods=['PUT'])
+def update_env_config():
+    data = request.json
+    try:
+        modify_db(
+            'UPDATE GEE_ENV_CONFIG SET ENV_NAME = ?, DB_NAME = ?, DB_PASSWORD = ?, DB_INSTANCE = ?, DB_TYPE = ?, DB_PORT = ?, LINUX_USER = ?, LINUX_PASSWORD = ?, LINUX_HOST = ? WHERE GT_ID = ?',
+            (data['envName'], data['dbName'], data['dbPassword'], data['dbInstance'], data['dbType'], 
+             data['dbPort'], data['linuxUser'], data['linuxPassword'], data['linuxHost'], data['gtId'])
+        )
+        return jsonify({'success': True, 'message': 'Environment configuration updated successfully!'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/delete_env_config/<int:gt_id>', methods=['DELETE'])
+def delete_env_config(gt_id):
+    try:
+        modify_db('DELETE FROM GEE_ENV_CONFIG WHERE GT_ID = ?', (gt_id,))
+        return jsonify({'success': True, 'message': 'Environment configuration deleted successfully!'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/test_connection', methods=['POST'])
+def test_connection():
+    data = request.json
+    db_type = data.get('dbType')
+    
+    try:
+        # Simulate connection testing based on database type
+        if db_type == 'SQLite':
+            # For SQLite, just check if we can open the database
+            import sqlite3
+            conn = sqlite3.connect(data['dbName'])
+            conn.close()
+            return jsonify({
+                'success': True, 
+                'message': 'SQLite connection successful!',
+                'handle': f"sqlite_{data['envName'].lower().replace(' ', '_')}"
+            })
+        
+        elif db_type == 'Oracle':
+            # For Oracle, we would typically use cx_Oracle
+            # This is a simulation for testing
+            if data['dbInstance'] and data['dbName'] and data['dbPort']:
+                return jsonify({
+                    'success': True, 
+                    'message': 'Oracle connection successful!',
+                    'handle': f"oracle_{data['envName'].lower().replace(' ', '_')}"
+                })
+            else:
+                return jsonify({
+                    'success': False, 
+                    'message': 'Missing required Oracle connection parameters.'
+                })
+        
+        elif db_type == 'Postgres':
+            # For PostgreSQL, we would typically use psycopg2
+            # This is a simulation for testing
+            if data['dbName'] and data['dbInstance'] and data['dbPort']:
+                return jsonify({
+                    'success': True, 
+                    'message': 'PostgreSQL connection successful!',
+                    'handle': f"postgres_{data['envName'].lower().replace(' ', '_')}"
+                })
+            else:
+                return jsonify({
+                    'success': False, 
+                    'message': 'Missing required PostgreSQL connection parameters.'
+                })
+        
+        else:
+            return jsonify({
+                'success': False, 
+                'message': f'Unsupported database type: {db_type}'
+            })
+            
+    except Exception as e:
+        return jsonify({
+            'success': False, 
+            'message': f'Connection failed: {str(e)}'
+        })
+
+# Store active connection handles
+active_connections = {}
+
+# In app.py - This is currently just storing in memory, not the database
+@app.route('/store_connection', methods=['POST'])
+def store_connection():
+    data = request.json
+    handle = data.get('handle')
+    config_id = data.get('configId')
+    
+    if not handle or not config_id:
+        return jsonify({
+            'success': False,
+            'message': 'Handle and configuration ID are required'
+        })
+    
+    try:
+        # First, check if this handle already exists
+        existing = query_db('SELECT * FROM GEE_ACTIVE_CONNECTIONS WHERE HANDLE = ?', 
+                           (handle,), one=True)
+        
+        if existing:
+            # Update existing connection
+            modify_db(
+                'UPDATE GEE_ACTIVE_CONNECTIONS SET CONFIG_ID = ?, STATUS = ?, CREATED = ? WHERE HANDLE = ?',
+                (config_id, 'active', datetime.now(), handle)
+            )
+        else:
+            # Insert new connection
+            modify_db(
+                'INSERT INTO GEE_ACTIVE_CONNECTIONS (HANDLE, CONFIG_ID, CREATED, STATUS) VALUES (?, ?, ?, ?)',
+                (handle, config_id, datetime.now(), 'active')
+            )
+        
+        # Also update the in-memory dictionary for fast access
+        active_connections[handle] = {
+            'config_id': config_id,
+            'created': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'status': 'active'
+        }
+        
+        return jsonify({
+            'success': True,
+            'message': f'Connection handle {handle} stored successfully'
+        })
+        
+    except Exception as e:
+        print(f"Error storing connection: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Error storing connection: {str(e)}'
+        })onnection handle {handle} stored successfully'
+    })
+
+@app.route('/get_active_connections')
+def get_active_connections():
+    return jsonify(active_connections)
+
 
 if __name__ == '__main__':
     init_app()

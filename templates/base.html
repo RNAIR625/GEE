@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}SLEP Flow Manager{% endblock %}</title>
+    <title>{% block title %}GEE Flow Manager{% endblock %}</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
@@ -70,7 +70,7 @@
         <div class="row g-0">
             <!-- Sidebar -->
             <div class="col-2 sidebar">
-                <div class="app-title">SLEP Flow Manager</div>
+                <div class="app-title">GEE Flow Manager</div>
                 <a href="{{ url_for('home') }}" class="sidebar-item {% if active_page == 'home' %}active{% endif %}">
                     <i class="fas fa-home me-2"></i>Dashboard
                 </a>
@@ -89,10 +89,13 @@
                 <a href="{{ url_for('stations') }}" class="sidebar-item {% if active_page == 'stations' %}active{% endif %}">
                     <i class="fas fa-project-diagram me-2"></i>Stations
                 </a>
+                <a href="{{ url_for('tables') }}" class="sidebar-item {% if active_page == 'tables' %}active{% endif %}">
+                    <i class="fas fa-table me-2"></i>Tables
+                </a>
                 <a href="{{ url_for('flow_designer') }}" class="sidebar-item {% if active_page == 'flow_designer' %}active{% endif %}">
                     <i class="fas fa-sitemap me-2"></i>Flow Designer
                 </a>
-                <a href="#" class="sidebar-item {% if active_page == 'env_config' %}active{% endif %}">
+                <a href="{{ url_for('env_config') }}" class="sidebar-item {% if active_page == 'env_config' %}active{% endif %}">
                     <i class="fas fa-cogs me-2"></i>ENV Config
                 </a>
             </div>
