@@ -130,7 +130,7 @@
     });
 
     function loadFieldClasses() {
-        fetch('/get_field_classes')
+        fetch('{{ url_for("fields.get_field_classes") }}')
             .then(response => response.json())
             .then(data => {
                 const select = document.getElementById('fieldClass');
@@ -142,7 +142,7 @@
     }
 
     function loadFields() {
-        fetch('/get_fields')
+        fetch('{{ url_for("fields.get_fields") }}')
             .then(response => response.json())
             .then(data => {
                 const tableBody = document.getElementById('fieldTableBody');
@@ -210,7 +210,7 @@
         }
 
         const method = gfId ? 'PUT' : 'POST';
-        const url = gfId ? '/update_field' : '/add_field';
+        const url = gfId ? '{{ url_for("fields.update_field") }}' : '{{ url_for("fields.add_field") }}';
         if (gfId) data.gfId = gfId;
 
         fetch(url, {
@@ -240,7 +240,7 @@
     function confirmDelete() {
         if (!currentDeleteId) return;
         
-        fetch(`/delete_field/${currentDeleteId}`, {
+        fetch(`{{ url_for("fields.delete_field", gf_id=0) }}`.replace('0', currentDeleteId), {
             method: 'DELETE'
         })
         .then(response => response.json())

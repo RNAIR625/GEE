@@ -113,12 +113,12 @@
     document.addEventListener('DOMContentLoaded', loadClasses);
 
     function loadClasses() {
-        fetch('/get_classes')
+        fetch('{{ url_for("classes.get_classes") }}')
             .then(response => response.json())
             .then(data => {
                 const tableBody = document.getElementById('classTableBody');
                 tableBody.innerHTML = '';
-                
+
                 data.forEach(cls => {
                     const row = `
                         <tr>
@@ -168,7 +168,7 @@
         }
 
         const method = gfcId ? 'PUT' : 'POST';
-        const url = gfcId ? '/update_class' : '/add_class';
+        const url = gfcId ? '{{ url_for("classes.update_class") }}' : '{{ url_for("classes.add_class") }}';
 
         fetch(url, {
             method: method,
@@ -201,8 +201,8 @@
 
     function confirmDelete() {
         if (!currentDeleteId) return;
-        
-        fetch(`/delete_class/${currentDeleteId}`, {
+
+        fetch(`{{ url_for("classes.delete_class", gfc_id=0) }}`.replace('0', currentDeleteId), {
             method: 'DELETE'
         })
         .then(response => response.json())

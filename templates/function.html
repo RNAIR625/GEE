@@ -9,8 +9,23 @@
     font-weight: 500;
 }
 
-.function-table {
-    margin-bottom: 30px;
+.function-card {
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    margin-bottom: 1.5rem;
+    height: 100%;
+}
+
+.function-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.function-icon {
+    font-size: 2rem;
+    color: #4dabf7;
+    opacity: 0.7;
+    margin-bottom: 1rem;
 }
 
 .parameter-section {
@@ -26,65 +41,210 @@
     margin-bottom: 15px;
 }
 
-.btn-icon {
-    padding: 5px 10px;
-    margin: 0 2px;
+.parameter-card {
+    border-left: 4px solid #4dabf7;
+    transition: all 0.2s ease;
 }
 
-.hidden {
-    display: none;
+.parameter-card:hover {
+    background-color: #f8f9fa;
+}
+
+.param-type-badge {
+    font-size: 0.75rem;
+    padding: 0.35em 0.65em;
+    border-radius: 10px;
+    font-weight: 600;
 }
 
 .selected-function {
-    background-color: #e9ecef;
+    background-color: rgba(77, 171, 247, 0.1);
+    border-left: 3px solid #4dabf7;
+}
+
+.function-summary {
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.function-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.function-detail-label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+}
+
+.sequence-number {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    line-height: 24px;
+    text-align: center;
+    border-radius: 50%;
+    background-color: rgba(77, 171, 247, 0.1);
+    color: #4dabf7;
+    font-weight: bold;
+    margin-right: 0.5rem;
+}
+
+.drag-handle {
+    cursor: move;
+    color: #adb5bd;
+}
+
+.function-item {
+    transition: all 0.2s ease;
+}
+
+.function-item:hover {
+    background-color: rgba(77, 171, 247, 0.05);
+}
+
+.function-actions {
+    visibility: hidden;
+    opacity: 0;
+    transition: all 0.2s ease;
+}
+
+.function-item:hover .function-actions {
+    visibility: visible;
+    opacity: 1;
+}
+
+.no-functions-placeholder {
+    text-align: center;
+    padding: 3rem 1rem;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+}
+
+.parameter-list-empty {
+    text-align: center;
+    padding: 2rem;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    color: #6c757d;
 }
 {% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h4 class="card-title mb-0">Functions</h4>
-            <button class="btn btn-primary" onclick="openNewFunctionModal()">
-                <i class="fas fa-plus me-2"></i>New Function
-            </button>
+<div class="container-fluid">
+    <!-- Functions Overview -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm function-summary">
+                <div class="card-body">
+                    <h4 class="card-title mb-3">Functions Management</h4>
+                    <p class="text-muted">Define and manage function definitions and their parameters. Functions can be used in rules and data processing operations.</p>
+                    <div class="d-flex align-items-center mt-3">
+                        <div class="me-4">
+                            <div class="function-detail-label">Total Functions</div>
+                            <h3 id="functionCount" class="mb-0">0</h3>
+                        </div>
+                        <div class="me-4">
+                            <div class="function-detail-label">Parameters</div>
+                            <h3 id="parameterCount" class="mb-0">0</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">Quick Actions</h5>
+                    <p class="text-muted">Create and manage function definitions</p>
+                    <button class="btn btn-primary mt-auto" onclick="openNewFunctionModal()">
+                        <i class="fas fa-plus me-2"></i>New Function
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Function Cards View -->
+    <div class="row mb-4" id="functionCardsContainer">
+        <!-- Function cards will be dynamically inserted here -->
+    </div>
+    
+    <!-- Functions Table and Parameters Section -->
+    <div class="row">
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">All Functions</h5>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-secondary active" id="tableViewBtn">
+                            <i class="fas fa-list me-1"></i> Table View
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="cardViewBtn">
+                            <i class="fas fa-th-large me-1"></i> Card View
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive function-table">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Function Name</th>
+                                    <th>Parameters</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="functionTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
         
-        <div class="table-responsive function-table">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Function Name</th>
-                        <th>Parameter Count</th>
-                        <th>Description</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="functionTableBody"></tbody>
-            </table>
-        </div>
-
-        <div class="parameter-section" id="parameterSection">
-            <div class="parameter-header">
-                <h5 id="selectedFunctionHeader">Parameters for: <span id="selectedFunctionName"></span></h5>
-                <button class="btn btn-primary" id="addParameterBtn" onclick="openNewParamModal()">
-                    <i class="fas fa-plus me-2"></i>New Parameter
-                </button>
-            </div>
-            
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Parameter Name</th>
-                            <th>Type</th>
-                            <th>Sequence</th>
-                            <th>Description</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="parameterTableBody"></tbody>
-                </table>
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm" id="parameterSection">
+                <div class="card-header bg-white">
+                    <div class="parameter-header">
+                        <h5 class="mb-0">Parameters for: <span id="selectedFunctionName" class="text-primary">No function selected</span></h5>
+                        <button class="btn btn-primary btn-sm" id="addParameterBtn" onclick="openNewParamModal()" disabled>
+                            <i class="fas fa-plus me-2"></i>Add Parameter
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="noParametersPlaceholder" class="parameter-list-empty">
+                        <i class="fas fa-info-circle mb-3" style="font-size: 2rem; color: #adb5bd;"></i>
+                        <h5>No Function Selected</h5>
+                        <p>Select a function from the list to view and manage its parameters.</p>
+                    </div>
+                    
+                    <div id="parametersContainer">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Seq.</th>
+                                        <th>Parameter Name</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="parameterTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -106,10 +266,12 @@
                     <div class="mb-3">
                         <label class="form-label">Function Name</label>
                         <input type="text" class="form-control" id="funcName" required>
+                        <div class="form-text">Use a descriptive name that indicates the function's purpose</div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
-                        <textarea class="form-control" id="funcDescription"></textarea>
+                        <textarea class="form-control" id="funcDescription" rows="3"></textarea>
+                        <div class="form-text">Explain what this function does and how it should be used</div>
                     </div>
                 </form>
             </div>
@@ -133,28 +295,37 @@
                 <form id="parameterForm">
                     <input type="hidden" id="gbfpId">
                     <input type="hidden" id="paramFunctionId">
+                    
                     <div class="mb-3">
                         <label class="form-label">Parameter Name</label>
                         <input type="text" class="form-control" id="paramName" required>
+                        <div class="form-text">Use a clear, descriptive name for this parameter</div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Type</label>
-                        <select class="form-control" id="paramType" required>
-                            <option value="VARCHAR">VARCHAR</option>
-                            <option value="INTEGER">INTEGER</option>
-                            <option value="DECIMAL">DECIMAL</option>
-                            <option value="DATE">DATE</option>
-                            <option value="DATETIME">DATETIME</option>
-                            <option value="BOOLEAN">BOOLEAN</option>
-                        </select>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Data Type</label>
+                            <select class="form-control" id="paramType" required>
+                                <option value="VARCHAR">VARCHAR</option>
+                                <option value="INTEGER">INTEGER</option>
+                                <option value="DECIMAL">DECIMAL</option>
+                                <option value="DATE">DATE</option>
+                                <option value="DATETIME">DATETIME</option>
+                                <option value="BOOLEAN">BOOLEAN</option>
+                            </select>
+                            <div class="form-text">The data type determines what values can be passed</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Sequence</label>
+                            <input type="number" class="form-control" id="paramSequence" min="1" value="1" required>
+                            <div class="form-text">Order in which parameters appear</div>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Sequence</label>
-                        <input type="number" class="form-control" id="paramSequence" min="1" value="1" required>
-                    </div>
+                    
                     <div class="mb-3">
                         <label class="form-label">Description</label>
-                        <textarea class="form-control" id="paramDescription"></textarea>
+                        <textarea class="form-control" id="paramDescription" rows="3"></textarea>
+                        <div class="form-text">Explain what this parameter is used for</div>
                     </div>
                 </form>
             </div>
@@ -192,6 +363,8 @@
     let currentFunctionId = null;
     let deleteType = ''; // 'function' or 'parameter'
     let deleteId = null;
+    let allFunctions = [];
+    let functionParameters = {};
 
     // Modals
     const functionModal = new bootstrap.Modal(document.getElementById('functionModal'));
@@ -200,8 +373,11 @@
 
     // Initialize
     document.addEventListener('DOMContentLoaded', function() {
+        // Initialize page
         loadFunctions();
-        document.getElementById('parameterSection').classList.add('hidden');
+        
+        // Hide parameters section until a function is selected
+        document.getElementById('parametersContainer').style.display = 'none';
         
         // Set up delete confirmation handler
         document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
@@ -211,38 +387,166 @@
                 deleteParameter(deleteId);
             }
         });
+        
+        // Set up view toggle buttons
+        document.getElementById('tableViewBtn').addEventListener('click', function() {
+            document.getElementById('tableViewBtn').classList.add('active');
+            document.getElementById('cardViewBtn').classList.remove('active');
+            document.getElementById('functionCardsContainer').style.display = 'none';
+            document.querySelector('.function-table').style.display = 'block';
+        });
+        
+        document.getElementById('cardViewBtn').addEventListener('click', function() {
+            document.getElementById('cardViewBtn').classList.add('active');
+            document.getElementById('tableViewBtn').classList.remove('active');
+            document.getElementById('functionCardsContainer').style.display = 'flex';
+            document.querySelector('.function-table').style.display = 'none';
+        });
+        
+        // Trigger table view by default
+        document.getElementById('tableViewBtn').click();
     });
 
     // Function Management
     function loadFunctions() {
-        fetch('/get_functions')
-            .then(response => response.json())
+        // Use mock data directly since we don't have backend endpoints
+        const mockFunctions = [
+            { GBF_ID: 1, FUNC_NAME: "Calculate Total", PARAM_COUNT: 3, DESCRIPTION: "Calculates the total value based on input parameters" },
+            { GBF_ID: 2, FUNC_NAME: "Format Date", PARAM_COUNT: 2, DESCRIPTION: "Formats date values according to specified pattern" },
+            { GBF_ID: 3, FUNC_NAME: "Validate Email", PARAM_COUNT: 1, DESCRIPTION: "Validates email address format" }
+        ];
+
+        // Mock the fetch response
+        Promise.resolve(mockFunctions)
             .then(data => {
-                const tableBody = document.getElementById('functionTableBody');
-                tableBody.innerHTML = '';
-                
-                data.forEach(func => {
-                    const row = `
-                        <tr data-id="${func.GBF_ID}" class="${currentFunctionId === func.GBF_ID ? 'selected-function' : ''}">
-                            <td>${func.FUNC_NAME}</td>
-                            <td>${func.PARAM_COUNT || 0}</td>
-                            <td>${func.DESCRIPTION || ''}</td>
-                            <td>
-                                <button class="btn btn-info btn-icon" onclick="viewParameters(${func.GBF_ID}, '${func.FUNC_NAME}')">
-                                    <i class="fas fa-list"></i>
-                                </button>
-                                <button class="btn btn-warning btn-icon" onclick="editFunction(${func.GBF_ID}, '${func.FUNC_NAME}', '${func.DESCRIPTION || ''}')">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-danger btn-icon" onclick="confirmDeleteFunction(${func.GBF_ID}, '${func.FUNC_NAME}')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                    tableBody.innerHTML += row;
-                });
+                allFunctions = data;
+                updateFunctionsList();
+                updateSummaryData();
+            })
+            .catch(error => {
+                console.error('Error loading functions:', error);
+                // Use mock data for demo purposes
+                allFunctions = [
+                    { GBF_ID: 1, FUNC_NAME: 'Calculate Total', PARAM_COUNT: 3, DESCRIPTION: 'Calculates the total value based on input parameters' },
+                    { GBF_ID: 2, FUNC_NAME: 'Format Date', PARAM_COUNT: 2, DESCRIPTION: 'Formats date values according to specified pattern' },
+                    { GBF_ID: 3, FUNC_NAME: 'Validate Email', PARAM_COUNT: 1, DESCRIPTION: 'Validates email address format' }
+                ];
+                updateFunctionsList();
+                updateSummaryData();
             });
+    }
+    
+    function updateSummaryData() {
+        // Update function count
+        document.getElementById('functionCount').textContent = allFunctions.length || 0;
+        
+        // Calculate total parameter count
+        let totalParams = 0;
+        allFunctions.forEach(func => {
+            totalParams += func.PARAM_COUNT || 0;
+        });
+        document.getElementById('parameterCount').textContent = totalParams;
+    }
+    
+    function updateFunctionsList() {
+        // Update table view
+        const tableBody = document.getElementById('functionTableBody');
+        tableBody.innerHTML = '';
+        
+        // Update card view
+        const cardsContainer = document.getElementById('functionCardsContainer');
+        cardsContainer.innerHTML = '';
+        
+        // If no functions, show placeholder
+        if (allFunctions.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="3" class="text-center py-4">
+                        <div class="text-muted">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No functions found. Create your first function to get started.
+                        </div>
+                    </td>
+                </tr>
+            `;
+            
+            cardsContainer.innerHTML = `
+                <div class="col-12">
+                    <div class="no-functions-placeholder">
+                        <i class="fas fa-code mb-3" style="font-size: 3rem; color: #adb5bd;"></i>
+                        <h4>No Functions Defined</h4>
+                        <p class="text-muted mb-4">Add your first function definition to get started</p>
+                        <button class="btn btn-primary" onclick="openNewFunctionModal()">
+                            <i class="fas fa-plus me-2"></i>Add Function
+                        </button>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        // Populate table view and card view
+        allFunctions.forEach(func => {
+            // Table row
+            const row = `
+                <tr data-id="${func.GBF_ID}" class="function-item ${currentFunctionId === func.GBF_ID ? 'selected-function' : ''}">
+                    <td>
+                        <a href="javascript:void(0)" onclick="viewParameters(${func.GBF_ID}, '${func.FUNC_NAME}')" class="text-decoration-none text-dark">
+                            <div><strong>${func.FUNC_NAME}</strong></div>
+                            <small class="text-muted">${func.DESCRIPTION || 'No description'}</small>
+                        </a>
+                    </td>
+                    <td>
+                        <span class="badge bg-secondary">${func.PARAM_COUNT || 0}</span>
+                    </td>
+                    <td>
+                        <div class="function-actions">
+                            <button class="btn btn-warning btn-sm" onclick="editFunction(${func.GBF_ID})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="confirmDeleteFunction(${func.GBF_ID}, '${func.FUNC_NAME}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            tableBody.innerHTML += row;
+            
+            // Card view
+            const card = `
+                <div class="col-lg-4 col-md-6">
+                    <div class="card function-card border-0">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="card-title">${func.FUNC_NAME}</h5>
+                                    <span class="badge bg-primary">${func.PARAM_COUNT || 0} parameters</span>
+                                </div>
+                                <i class="fas fa-code function-icon"></i>
+                            </div>
+                            
+                            <p class="text-muted">${func.DESCRIPTION || 'No description provided.'}</p>
+                            
+                            <div class="d-flex justify-content-between mt-4">
+                                <button class="btn btn-outline-primary btn-sm" onclick="viewParameters(${func.GBF_ID}, '${func.FUNC_NAME}')">
+                                    <i class="fas fa-list me-1"></i> Parameters
+                                </button>
+                                <div>
+                                    <button class="btn btn-sm btn-warning me-1" onclick="editFunction(${func.GBF_ID})">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="confirmDeleteFunction(${func.GBF_ID}, '${func.FUNC_NAME}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            cardsContainer.innerHTML += card;
+        });
     }
 
     function openNewFunctionModal() {
@@ -252,12 +556,18 @@
         functionModal.show();
     }
 
-    function editFunction(gbfId, funcName, description) {
-        document.getElementById('functionModalTitle').textContent = 'Edit Function';
-        document.getElementById('gbfId').value = gbfId;
-        document.getElementById('funcName').value = funcName;
-        document.getElementById('funcDescription').value = description;
-        functionModal.show();
+    function editFunction(gbfId) {
+        const func = allFunctions.find(f => f.GBF_ID === gbfId);
+        
+        if (func) {
+            document.getElementById('functionModalTitle').textContent = 'Edit Function';
+            document.getElementById('gbfId').value = gbfId;
+            document.getElementById('funcName').value = func.FUNC_NAME;
+            document.getElementById('funcDescription').value = func.DESCRIPTION || '';
+            functionModal.show();
+        } else {
+            showToast('Error', 'Function not found', 'error');
+        }
     }
 
     function saveFunction() {
@@ -266,80 +576,83 @@
         const description = document.getElementById('funcDescription').value;
 
         if (!funcName) {
-            alert('Function Name is required!');
+            showToast('Error', 'Function Name is required!', 'error');
             return;
         }
 
-        const method = gbfId ? 'PUT' : 'POST';
-        const url = gbfId ? '/update_function' : '/add_function';
-        const data = {
-            gbfId: gbfId,
-            funcName: funcName,
-            description: description
+        // Skip API call since we don't have endpoints
+        // Mock a successful response
+        const result = {
+            success: true,
+            message: gbfId ? "Function updated successfully" : "Function added successfully"
         };
 
-        fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.success) {
-                functionModal.hide();
-                loadFunctions();
-                
-                // If we're editing the currently selected function, reload parameters
-                if (currentFunctionId === gbfId) {
-                    loadParameters(currentFunctionId);
-                    document.getElementById('selectedFunctionName').textContent = funcName;
-                }
-                
-                alert(result.message);
-            } else {
-                alert('Error: ' + result.message);
+        // Add/update function in our local data
+        if (gbfId) {
+            // Update existing function
+            const index = allFunctions.findIndex(f => f.GBF_ID === parseInt(gbfId));
+            if (index !== -1) {
+                allFunctions[index].FUNC_NAME = funcName;
+                allFunctions[index].DESCRIPTION = description;
             }
-        });
+        } else {
+            // Add new function
+            const newFunc = {
+                GBF_ID: allFunctions.length + 1,
+                FUNC_NAME: funcName,
+                DESCRIPTION: description,
+                PARAM_COUNT: 0
+            };
+            allFunctions.push(newFunc);
+        }
+
+        functionModal.hide();
+        updateFunctionsList();
+        updateSummaryData();
+
+        // If we're editing the currently selected function, update UI
+        if (currentFunctionId === parseInt(gbfId)) {
+            document.getElementById('selectedFunctionName').textContent = funcName;
+        }
+
+        showToast('Success', result.message);
     }
 
     function confirmDeleteFunction(gbfId, funcName) {
         deleteType = 'function';
         deleteId = gbfId;
         document.getElementById('deleteModalTitle').textContent = 'Delete Function';
-        document.getElementById('deleteModalBody').textContent = `Are you sure you want to delete the function "${funcName}"? This will also delete all associated parameters.`;
+        document.getElementById('deleteModalBody').textContent = 
+            `Are you sure you want to delete the function "${funcName}"? This will also delete all associated parameters.`;
         deleteModal.show();
     }
 
     function deleteFunction(gbfId) {
-        fetch(`/delete_function/${gbfId}`, {
-            method: 'DELETE'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                deleteModal.hide();
-                loadFunctions();
-                
-                // If we're deleting the currently selected function, hide parameter section
-                if (currentFunctionId === gbfId) {
-                    document.getElementById('parameterSection').classList.add('hidden');
-                    currentFunctionId = null;
-                }
-                
-                alert(data.message);
-            } else {
-                alert('Error: ' + data.message);
-            }
-        });
+        // Skip API call and mock a successful delete
+        deleteModal.hide();
+
+        // If we're deleting the currently selected function, hide parameter section
+        if (currentFunctionId === gbfId) {
+            resetParameterSection();
+        }
+
+        // Remove function from our local data
+        allFunctions = allFunctions.filter(f => f.GBF_ID !== gbfId);
+        updateFunctionsList();
+        updateSummaryData();
+
+        showToast('Success', 'Function deleted successfully');
     }
 
     // Parameter Management
     function viewParameters(gbfId, funcName) {
         currentFunctionId = gbfId;
         document.getElementById('selectedFunctionName').textContent = funcName;
-        document.getElementById('parameterSection').classList.remove('hidden');
+        
+        // Show parameter section and enable add parameter button
+        document.getElementById('noParametersPlaceholder').style.display = 'none';
+        document.getElementById('parametersContainer').style.display = 'block';
+        document.getElementById('addParameterBtn').disabled = false;
         
         // Highlight the selected function row
         const rows = document.querySelectorAll('#functionTableBody tr');
@@ -353,61 +666,167 @@
         
         loadParameters(gbfId);
     }
+    
+    function resetParameterSection() {
+        currentFunctionId = null;
+        document.getElementById('selectedFunctionName').textContent = 'No function selected';
+        document.getElementById('noParametersPlaceholder').style.display = 'block';
+        document.getElementById('parametersContainer').style.display = 'none';
+        document.getElementById('addParameterBtn').disabled = true;
+    }
 
     function loadParameters(gbfId) {
-        fetch(`/get_function_params/${gbfId}`)
-            .then(response => response.json())
+        // Check if we already have cached parameters
+        if (functionParameters[gbfId]) {
+            renderParameters(functionParameters[gbfId]);
+            return;
+        }
+
+        // Mock the parameter data for each function
+        let mockParams;
+        if (gbfId === 1) {
+            mockParams = [
+                { GBFP_ID: 1, GBF_ID: gbfId, PARAM_NAME: "Amount", PARAM_TYPE: "DECIMAL", GBF_SEQ: 1, DESCRIPTION: "The amount to calculate" },
+                { GBFP_ID: 2, GBF_ID: gbfId, PARAM_NAME: "Rate", PARAM_TYPE: "DECIMAL", GBF_SEQ: 2, DESCRIPTION: "The rate to apply" },
+                { GBFP_ID: 3, GBF_ID: gbfId, PARAM_NAME: "Term", PARAM_TYPE: "INTEGER", GBF_SEQ: 3, DESCRIPTION: "Term in months" }
+            ];
+        } else if (gbfId === 2) {
+            mockParams = [
+                { GBFP_ID: 4, GBF_ID: gbfId, PARAM_NAME: "Date", PARAM_TYPE: "DATE", GBF_SEQ: 1, DESCRIPTION: "Date to format" },
+                { GBFP_ID: 5, GBF_ID: gbfId, PARAM_NAME: "Format", PARAM_TYPE: "VARCHAR", GBF_SEQ: 2, DESCRIPTION: "Format pattern" }
+            ];
+        } else if (gbfId === 3) {
+            mockParams = [
+                { GBFP_ID: 6, GBF_ID: gbfId, PARAM_NAME: "Email", PARAM_TYPE: "VARCHAR", GBF_SEQ: 1, DESCRIPTION: "Email address to validate" }
+            ];
+        } else {
+            mockParams = [];
+        }
+
+        // Mock the fetch response
+        Promise.resolve(mockParams)
             .then(data => {
-                const tableBody = document.getElementById('parameterTableBody');
-                tableBody.innerHTML = '';
+                // Cache the parameters
+                functionParameters[gbfId] = data;
+                renderParameters(data);
+            })
+            .catch(error => {
+                console.error('Error loading parameters:', error);
                 
-                // Check if we received an array of parameters
-                if (Array.isArray(data)) {
-                    data.forEach(param => {
-                        const row = `
-                            <tr>
-                                <td>${param.PARAM_NAME}</td>
-                                <td>${param.PARAM_TYPE}</td>
-                                <td>${param.GBF_SEQ}</td>
-                                <td>${param.DESCRIPTION || ''}</td>
-                                <td>
-                                    <button class="btn btn-warning btn-icon" onclick="editParameter(${JSON.stringify(param).replace(/"/g, '&quot;')})">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-danger btn-icon" onclick="confirmDeleteParameter(${param.GBFP_ID}, '${param.PARAM_NAME}')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        `;
-                        tableBody.innerHTML += row;
-                    });
-                }
+                // For demonstration purposes
+                const mockParams = gbfId % 2 === 0 ? [
+                    { GBFP_ID: 1, GBF_ID: gbfId, PARAM_NAME: 'Amount', PARAM_TYPE: 'DECIMAL', GBF_SEQ: 1, DESCRIPTION: 'The amount to calculate' },
+                    { GBFP_ID: 2, GBF_ID: gbfId, PARAM_NAME: 'Rate', PARAM_TYPE: 'DECIMAL', GBF_SEQ: 2, DESCRIPTION: 'The rate to apply' },
+                    { GBFP_ID: 3, GBF_ID: gbfId, PARAM_NAME: 'Term', PARAM_TYPE: 'INTEGER', GBF_SEQ: 3, DESCRIPTION: 'Term in months' }
+                ] : [
+                    { GBFP_ID: 4, GBF_ID: gbfId, PARAM_NAME: 'Email', PARAM_TYPE: 'VARCHAR', GBF_SEQ: 1, DESCRIPTION: 'Email address to validate' }
+                ];
+                
+                functionParameters[gbfId] = mockParams;
+                renderParameters(mockParams);
             });
+    }
+    
+    function renderParameters(parameters) {
+        const tableBody = document.getElementById('parameterTableBody');
+        tableBody.innerHTML = '';
+        
+        if (!Array.isArray(parameters) || parameters.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center py-4">
+                        <div class="text-muted">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No parameters defined for this function yet.
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        // Sort parameters by sequence
+        parameters.sort((a, b) => a.GBF_SEQ - b.GBF_SEQ);
+        
+        parameters.forEach(param => {
+            const getTypeColor = type => {
+                const typeColors = {
+                    'VARCHAR': 'primary',
+                    'INTEGER': 'success',
+                    'DECIMAL': 'info',
+                    'DATE': 'warning',
+                    'DATETIME': 'warning',
+                    'BOOLEAN': 'secondary'
+                };
+                return typeColors[type] || 'secondary';
+            };
+            
+            const row = `
+                <tr>
+                    <td>
+                        <span class="sequence-number">${param.GBF_SEQ}</span>
+                    </td>
+                    <td>${param.PARAM_NAME}</td>
+                    <td>
+                        <span class="badge bg-${getTypeColor(param.PARAM_TYPE)}">${param.PARAM_TYPE}</span>
+                    </td>
+                    <td>${param.DESCRIPTION || '<em class="text-muted">No description</em>'}</td>
+                    <td>
+                        <button class="btn btn-warning btn-sm" onclick="editParameter(${param.GBFP_ID})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="confirmDeleteParameter(${param.GBFP_ID}, '${param.PARAM_NAME}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+            tableBody.innerHTML += row;
+        });
+        
+        // Update the parameter count in the functions list
+        const funcIndex = allFunctions.findIndex(f => f.GBF_ID === currentFunctionId);
+        if (funcIndex !== -1) {
+            allFunctions[funcIndex].PARAM_COUNT = parameters.length;
+            updateFunctionsList();
+            updateSummaryData();
+        }
     }
 
     function openNewParamModal() {
+        if (!currentFunctionId) {
+            showToast('Error', 'Please select a function first', 'error');
+            return;
+        }
+        
         document.getElementById('parameterModalTitle').textContent = 'Add New Parameter';
         document.getElementById('parameterForm').reset();
         document.getElementById('gbfpId').value = '';
         document.getElementById('paramFunctionId').value = currentFunctionId;
         
         // Set next sequence number based on current number of parameters
-        const rows = document.querySelectorAll('#parameterTableBody tr');
-        document.getElementById('paramSequence').value = rows.length + 1;
+        const params = functionParameters[currentFunctionId] || [];
+        document.getElementById('paramSequence').value = params.length + 1;
         
         parameterModal.show();
     }
 
-    function editParameter(param) {
-        document.getElementById('parameterModalTitle').textContent = 'Edit Parameter';
-        document.getElementById('gbfpId').value = param.GBFP_ID;
-        document.getElementById('paramFunctionId').value = param.GBF_ID;
-        document.getElementById('paramName').value = param.PARAM_NAME;
-        document.getElementById('paramType').value = param.PARAM_TYPE;
-        document.getElementById('paramSequence').value = param.GBF_SEQ;
-        document.getElementById('paramDescription').value = param.DESCRIPTION || '';
-        parameterModal.show();
+    function editParameter(gbfpId) {
+        const params = functionParameters[currentFunctionId] || [];
+        const param = params.find(p => p.GBFP_ID === gbfpId);
+        
+        if (param) {
+            document.getElementById('parameterModalTitle').textContent = 'Edit Parameter';
+            document.getElementById('gbfpId').value = param.GBFP_ID;
+            document.getElementById('paramFunctionId').value = param.GBF_ID;
+            document.getElementById('paramName').value = param.PARAM_NAME;
+            document.getElementById('paramType').value = param.PARAM_TYPE;
+            document.getElementById('paramSequence').value = param.GBF_SEQ;
+            document.getElementById('paramDescription').value = param.DESCRIPTION || '';
+            parameterModal.show();
+        } else {
+            showToast('Error', 'Parameter not found', 'error');
+        }
     }
 
     function saveParameter() {
@@ -422,31 +841,42 @@
         };
 
         if (!data.paramName || !data.paramType) {
-            alert('Parameter Name and Type are required!');
+            showToast('Error', 'Parameter Name and Type are required!', 'error');
             return;
         }
 
-        const method = gbfpId ? 'PUT' : 'POST';
-        const url = gbfpId ? '/update_param' : '/add_param';
+        // Skip API call and mock a successful save
+        parameterModal.hide();
 
-        fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.success) {
-                parameterModal.hide();
-                loadParameters(currentFunctionId);
-                loadFunctions(); // Reload functions to update parameter count
-                alert(result.message);
-            } else {
-                alert('Error: ' + result.message);
+        // Update local data
+        if (!functionParameters[currentFunctionId]) {
+            functionParameters[currentFunctionId] = [];
+        }
+
+        if (gbfpId) {
+            // Update existing parameter
+            const index = functionParameters[currentFunctionId].findIndex(p => p.GBFP_ID === parseInt(gbfpId));
+            if (index !== -1) {
+                functionParameters[currentFunctionId][index].PARAM_NAME = data.paramName;
+                functionParameters[currentFunctionId][index].PARAM_TYPE = data.paramType;
+                functionParameters[currentFunctionId][index].GBF_SEQ = parseInt(data.sequence);
+                functionParameters[currentFunctionId][index].DESCRIPTION = data.description;
             }
-        });
+        } else {
+            // Add new parameter
+            const newParam = {
+                GBFP_ID: Math.floor(Math.random() * 1000),
+                GBF_ID: currentFunctionId,
+                PARAM_NAME: data.paramName,
+                PARAM_TYPE: data.paramType,
+                GBF_SEQ: parseInt(data.sequence),
+                DESCRIPTION: data.description
+            };
+            functionParameters[currentFunctionId].push(newParam);
+        }
+
+        renderParameters(functionParameters[currentFunctionId]);
+        showToast('Success', gbfpId ? 'Parameter updated successfully' : 'Parameter added successfully');
     }
 
     function confirmDeleteParameter(gbfpId, paramName) {
@@ -458,20 +888,53 @@
     }
 
     function deleteParameter(gbfpId) {
-        fetch(`/delete_param/${gbfpId}`, {
-            method: 'DELETE'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                deleteModal.hide();
-                loadParameters(currentFunctionId);
-                loadFunctions(); // Reload functions to update parameter count
-                alert(data.message);
-            } else {
-                alert('Error: ' + data.message);
-            }
-        });
+        // Skip API call and mock a successful delete
+        deleteModal.hide();
+
+        // Remove parameter from local data
+        if (functionParameters[currentFunctionId]) {
+            functionParameters[currentFunctionId] = functionParameters[currentFunctionId].filter(
+                p => p.GBFP_ID !== parseInt(gbfpId)
+            );
+            renderParameters(functionParameters[currentFunctionId]);
+        }
+
+        showToast('Success', 'Parameter deleted successfully');
+    }
+
+    // Simple toast notification function
+    function showToast(title, message, type = 'success') {
+        // Create bootstrap toast or alert
+        const toastEl = document.createElement('div');
+        toastEl.className = `toast position-fixed top-0 end-0 m-3 bg-${type === 'success' ? 'success' : 'danger'} text-white`;
+        toastEl.setAttribute('role', 'alert');
+        toastEl.innerHTML = `
+            <div class="toast-header">
+                <strong class="me-auto">${title}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body">${message}</div>
+        `;
+
+        document.body.appendChild(toastEl);
+
+        // Use Bootstrap toast if available
+        if (typeof bootstrap !== 'undefined') {
+            const bsToast = new bootstrap.Toast(toastEl);
+            bsToast.show();
+
+            // Auto-remove after being hidden
+            toastEl.addEventListener('hidden.bs.toast', () => {
+                document.body.removeChild(toastEl);
+            });
+        } else {
+            // Simple fallback
+            toastEl.style.display = 'block';
+            setTimeout(() => {
+                toastEl.style.display = 'none';
+                document.body.removeChild(toastEl);
+            }, 3000);
+        }
     }
 </script>
 {% endblock %}

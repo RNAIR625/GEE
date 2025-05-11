@@ -3,36 +3,51 @@
 {% block title %}Rule Groups Management{% endblock %}
 
 {% block additional_styles %}
+/* Table styling */
 .table thead th {
-    background-color: #f39c12;
+    background-color: var(--primary-color);
     color: white;
     font-weight: 500;
+    padding: 12px 15px;
+    border-bottom: none;
 }
 
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Card styling */
 .card-header {
-    background-color: #f5f5f5;
+    background-color: #f8f9fa;
     padding: 15px;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid #eee;
 }
 
 .rule-group-card {
-    margin-bottom: 20px;
+    transition: all 0.2s ease-in-out;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
     overflow: hidden;
 }
 
+.rule-group-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
 .rule-group-card .card-header {
-    background-color: #f39c12;
+    background-color: var(--primary-color);
     color: white;
     font-weight: 500;
 }
 
+/* Badge styling */
 .condition-type-badge {
     padding: 5px 10px;
     border-radius: 15px;
     font-size: 0.8rem;
     font-weight: 500;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .condition-type-AND {
@@ -50,14 +65,19 @@
     color: white;
 }
 
+/* Button groups */
 .btn-group-sm {
     display: flex;
     gap: 5px;
 }
 
+/* Hierarchy styling */
 .group-hierarchy {
     font-size: 0.85rem;
     color: #6c757d;
+    background-color: #f8f9fa;
+    padding: 5px 10px;
+    border-radius: 5px;
 }
 
 .hierarchy-arrow {
@@ -65,9 +85,21 @@
     margin: 0 5px;
 }
 
+/* Form controls */
+.form-control:focus, .form-select:focus, .form-check-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.25);
+}
+
 .form-check-input:checked {
-    background-color: #f39c12;
-    border-color: #f39c12;
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label,
+.form-floating > .form-select ~ label {
+    color: var(--primary-color);
 }
 
 .required-group {
@@ -85,22 +117,22 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid px-4">
+<div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">Rule Groups</h2>
+        <h1 class="h3 mb-0">Rule Groups</h1>
         <button class="btn btn-primary" onclick="openNewGroupModal()">
             <i class="fas fa-plus me-2"></i>New Rule Group
         </button>
     </div>
-    
+
     <div class="row mb-4">
-        <div class="col-md-4">
+        <div class="col-lg-4 col-md-6 mb-2">
             <div class="input-group">
                 <span class="input-group-text"><i class="fas fa-search"></i></span>
                 <input type="text" class="form-control" id="searchGroups" placeholder="Search rule groups..." onkeyup="searchRuleGroups()">
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-lg-3 col-md-6 mb-2">
             <select class="form-select" id="filterCondType" onchange="filterRuleGroups()">
                 <option value="">All Condition Types</option>
                 <option value="AND">AND</option>
@@ -108,7 +140,7 @@
                 <option value="NONE">NONE</option>
             </select>
         </div>
-        <div class="col-md-3">
+        <div class="col-lg-3 col-md-6 mb-2">
             <select class="form-select" id="sortOption" onchange="sortRuleGroups()">
                 <option value="name-asc">Name (A-Z)</option>
                 <option value="name-desc">Name (Z-A)</option>
@@ -116,7 +148,7 @@
                 <option value="date-asc">Oldest First</option>
             </select>
         </div>
-        <div class="col-md-2">
+        <div class="col-lg-2 col-md-6 mb-2">
             <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" id="viewMode" onchange="toggleViewMode()">
                 <label class="form-check-label" for="viewMode">Card View</label>
@@ -125,10 +157,13 @@
     </div>
     
     <!-- Table View (Default) -->
-    <div id="tableView" class="card">
+    <div id="tableView" class="card shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 fw-bold text-primary">Rule Groups List</h5>
+        </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-hover">
+                <table class="table table-hover table-striped">
                     <thead>
                         <tr>
                             <th>Group Name</th>
@@ -148,9 +183,9 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Card View (Hidden by default) -->
-    <div id="cardView" class="row d-none">
+    <div id="cardView" class="row g-3 d-none">
         <!-- Cards will be populated dynamically -->
     </div>
 </div>
@@ -158,73 +193,95 @@
 <!-- Rule Group Modal -->
 <div class="modal fade" id="ruleGroupModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalTitle">Add New Rule Group</h5>
+        <div class="modal-content shadow">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold" id="modalTitle">Add New Rule Group</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="ruleGroupForm">
                     <input type="hidden" id="grgId">
-                    <div class="row mb-3">
+                    <div class="row g-3 mb-3">
                         <div class="col-md-8">
-                            <label class="form-label">Group Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="groupName" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Condition Type</label>
-                            <select class="form-select" id="condType">
-                                <option value="AND">AND</option>
-                                <option value="OR">OR</option>
-                                <option value="NONE">NONE</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-8">
-                            <label class="form-label">Parent Group</label>
-                            <select class="form-select" id="parentGroup">
-                                <option value="">None</option>
-                                <!-- Will be populated dynamically -->
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Group Role</label>
-                            <div class="form-check mt-2">
-                                <input class="form-check-input" type="checkbox" id="isCondition">
-                                <label class="form-check-label" for="isCondition">
-                                    Used as a condition
-                                </label>
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="groupName" placeholder="Enter group name" required>
+                                <label for="groupName">Group Name <span class="text-danger">*</span></label>
                             </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="isAction">
-                                <label class="form-check-label" for="isAction">
-                                    Used as an action
-                                </label>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                <select class="form-select" id="condType">
+                                    <option value="AND">AND</option>
+                                    <option value="OR">OR</option>
+                                    <option value="NONE">NONE</option>
+                                </select>
+                                <label for="condType">Condition Type</label>
                             </div>
                         </div>
                     </div>
-                    
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-8">
+                            <div class="form-floating">
+                                <select class="form-select" id="parentGroup">
+                                    <option value="">None</option>
+                                    <!-- Will be populated dynamically -->
+                                </select>
+                                <label for="parentGroup">Parent Group</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold mb-2">Group Role</label>
+                            <div class="card shadow-sm">
+                                <div class="card-body p-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="isCondition">
+                                        <label class="form-check-label" for="isCondition">
+                                            Used as a condition
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch mt-2">
+                                        <input class="form-check-input" type="checkbox" id="isAction">
+                                        <label class="form-check-label" for="isAction">
+                                            Used as an action
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="mb-3">
-                        <label class="form-label">Description</label>
-                        <textarea class="form-control" id="groupDescription" rows="4"></textarea>
-                    </div>
-                    
-                    <div id="ruleSection" class="mb-3 d-none">
-                        <h6 class="border-bottom pb-2 mb-3">Assigned Rules</h6>
-                        <div id="assignedRulesList">
-                            <!-- Will be populated when editing -->
+                        <div class="form-floating">
+                            <textarea class="form-control" id="groupDescription" style="height: 100px" placeholder="Enter description"></textarea>
+                            <label for="groupDescription">Description</label>
                         </div>
-                        <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="addRuleBtn">
-                            <i class="fas fa-plus me-1"></i> Add Rule
-                        </button>
+                    </div>
+
+                    <div id="ruleSection" class="mb-3 d-none">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-white">
+                                <h6 class="mb-0 fw-bold">Assigned Rules</h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="assignedRulesList">
+                                    <!-- Will be populated when editing -->
+                                </div>
+                                <button type="button" class="btn btn-outline-primary btn-sm mt-3" id="addRuleBtn">
+                                    <i class="fas fa-plus me-1"></i> Add Rule
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="saveRuleGroup()">Save</button>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-primary" onclick="saveRuleGroup()">
+                    <i class="fas fa-save me-1"></i>Save Rule Group
+                </button>
             </div>
         </div>
     </div>
@@ -233,10 +290,10 @@
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1">
     <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
+        <div class="modal-content shadow">
+            <div class="modal-header bg-danger text-white">
                 <h5 class="modal-title">Confirm Delete</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <p>Are you sure you want to delete this rule group? This action cannot be undone.</p>
@@ -245,9 +302,13 @@
                     <span id="deleteWarningText">Warning: This will also remove all dependencies and connections in flows.</span>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-danger" onclick="confirmDelete()">
+                    <i class="fas fa-trash me-1"></i>Delete
+                </button>
             </div>
         </div>
     </div>
@@ -256,21 +317,26 @@
 <!-- Rule Selection Modal -->
 <div class="modal fade" id="ruleSelectionModal" tabindex="-1">
     <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Add Rule to Group</h5>
+        <div class="modal-content shadow">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold">Add Rule to Group</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <input type="text" class="form-control" id="searchRules" placeholder="Search rules...">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control" id="searchRules" placeholder="Search rules...">
+                    </div>
                 </div>
                 <div class="list-group" id="rulesList">
                     <!-- Will be populated dynamically -->
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Close
+                </button>
             </div>
         </div>
     </div>
@@ -298,19 +364,19 @@
     });
 
     function loadRuleGroups() {
-        fetch('/get_rule_groups')
+        fetch('/rule_groups/get_rule_groups')
             .then(response => response.json())
             .then(data => {
                 ruleGroupsData = data;
                 allRuleGroups = [...data]; // Keep a backup of all groups
-                
+
                 // Load view based on current mode
                 if (document.getElementById('viewMode').checked) {
                     renderCardView(data);
                 } else {
                     renderTableView(data);
                 }
-                
+
                 // Also populate parent group dropdown for the modal
                 updateParentGroupOptions();
             })
@@ -351,13 +417,13 @@
                     <td>${updateDate}</td>
                     <td>
                         <div class="btn-group-sm">
-                            <button class="btn btn-warning btn-sm" onclick="editRuleGroup(${group.GRG_ID})">
+                            <button class="btn btn-outline-warning btn-sm" title="Edit" onclick="editRuleGroup(${group.GRG_ID})">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn btn-info btn-sm" onclick="viewGroupDetails(${group.GRG_ID})">
+                            <button class="btn btn-outline-info btn-sm" title="View Details" onclick="viewGroupDetails(${group.GRG_ID})">
                                 <i class="fas fa-eye"></i>
                             </button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteRuleGroup(${group.GRG_ID})">
+                            <button class="btn btn-outline-danger btn-sm" title="Delete" onclick="deleteRuleGroup(${group.GRG_ID})">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -389,10 +455,10 @@
             const updateDate = formatDate(group.UPDATE_DATE || group.CREATE_DATE);
             
             const card = `
-                <div class="col-md-4 mb-4">
-                    <div class="card rule-group-card h-100">
+                <div class="col-lg-4 col-md-6 mb-2">
+                    <div class="card rule-group-card h-100 shadow-sm">
                         <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">${group.GROUP_NAME}</h5>
+                            <h5 class="mb-0 fw-bold">${group.GROUP_NAME}</h5>
                             <span class="condition-type-badge ${condTypeClass}">
                                 ${group.COND_TYPE || 'NONE'}
                             </span>
@@ -403,24 +469,24 @@
                             </p>
                             ${parentName ? `
                                 <div class="group-hierarchy mb-2">
-                                    <i class="fas fa-sitemap me-1"></i> 
+                                    <i class="fas fa-sitemap me-1"></i>
                                     Parent: ${parentName}
                                 </div>
                             ` : ''}
                             <div class="text-muted small mb-3">
-                                <i class="far fa-clock me-1"></i> 
+                                <i class="far fa-clock me-1"></i>
                                 Last updated: ${updateDate}
                             </div>
                         </div>
                         <div class="card-footer bg-transparent">
-                            <div class="btn-group w-100">
-                                <button class="btn btn-warning" onclick="editRuleGroup(${group.GRG_ID})">
+                            <div class="d-flex gap-2 justify-content-between">
+                                <button class="btn btn-sm btn-outline-warning flex-grow-1" onclick="editRuleGroup(${group.GRG_ID})">
                                     <i class="fas fa-edit me-1"></i> Edit
                                 </button>
-                                <button class="btn btn-info" onclick="viewGroupDetails(${group.GRG_ID})">
+                                <button class="btn btn-sm btn-outline-info flex-grow-1" onclick="viewGroupDetails(${group.GRG_ID})">
                                     <i class="fas fa-eye me-1"></i> View
                                 </button>
-                                <button class="btn btn-danger" onclick="deleteRuleGroup(${group.GRG_ID})">
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteRuleGroup(${group.GRG_ID})">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -629,8 +695,8 @@
         };
         
         const method = grgId ? 'PUT' : 'POST';
-        const url = grgId ? '/update_rule_group' : '/add_rule_group';
-        
+        const url = grgId ? '/rule_groups/update_rule_group' : '/rule_groups/add_rule_group';
+
         fetch(url, {
             method: method,
             headers: {
@@ -677,8 +743,8 @@
 
     function confirmDelete() {
         if (!currentDeleteId) return;
-        
-        fetch(`/delete_rule_group/${currentDeleteId}`, {
+
+        fetch(`/rule_groups/delete_rule_group/${currentDeleteId}`, {
             method: 'DELETE'
         })
         .then(response => response.json())
@@ -698,14 +764,21 @@
     }
     
     function loadAssignedRules(grgId) {
-        // In a real implementation, this would fetch rules from the database
-        // For now, just show placeholder data
-        assignedRules = [
-            { id: 1, name: 'Validate Email Format', sequence: 1 },
-            { id: 2, name: 'Check Required Fields', sequence: 2 }
-        ];
-        
-        renderAssignedRules();
+        fetch(`/rule_groups/get_assigned_rules/${grgId}`)
+            .then(response => response.json())
+            .then(data => {
+                assignedRules = data;
+                renderAssignedRules();
+            })
+            .catch(error => {
+                console.error('Error loading assigned rules:', error);
+                // Fallback to placeholder data if API fails
+                assignedRules = [
+                    { id: 1, name: 'Validate Email Format', sequence: 1 },
+                    { id: 2, name: 'Check Required Fields', sequence: 2 }
+                ];
+                renderAssignedRules();
+            });
     }
     
     function renderAssignedRules() {
@@ -772,17 +845,24 @@
     }
     
     function loadAvailableRules() {
-        // In a real implementation, this would fetch rules from the database
-        // For now, just show placeholder data
-        rulesData = [
-            { id: 1, name: 'Validate Email Format' },
-            { id: 2, name: 'Check Required Fields' },
-            { id: 3, name: 'Calculate Total Amount' },
-            { id: 4, name: 'Format Phone Number' },
-            { id: 5, name: 'Verify Address' }
-        ];
-        
-        renderAvailableRules(rulesData);
+        fetch('/rule_groups/get_rules')
+            .then(response => response.json())
+            .then(data => {
+                rulesData = data;
+                renderAvailableRules(rulesData);
+            })
+            .catch(error => {
+                console.error('Error loading available rules:', error);
+                // Fallback to placeholder data if API fails
+                rulesData = [
+                    { id: 1, name: 'Validate Email Format' },
+                    { id: 2, name: 'Check Required Fields' },
+                    { id: 3, name: 'Calculate Total Amount' },
+                    { id: 4, name: 'Format Phone Number' },
+                    { id: 5, name: 'Verify Address' }
+                ];
+                renderAvailableRules(rulesData);
+            });
     }
     
     function renderAvailableRules(rules) {

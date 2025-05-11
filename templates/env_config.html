@@ -326,6 +326,7 @@
     let currentConnectionHandle = null;
     let currentConfigId = null;
     let activeConnections = {};
+    let app_runtime_id = "{{ app_runtime_id }}";
 
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize modals
@@ -432,7 +433,7 @@
         // Show testing status
         updateConnectionStatus('<div class="d-flex align-items-center"><div class="spinner-border text-primary me-3" role="status"><span class="visually-hidden">Testing...</span></div><div>Testing connection to database...</div></div>');
         
-        fetch('/test_connection', {
+        fetch('{{ url_for("env_config.test_connection") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -496,14 +497,15 @@
             return;
         }
         
-        fetch('/store_connection', {
+        fetch('{{ url_for("env_config.store_connection") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
                 handle: currentConnectionHandle,
-                configId: currentConfigId
+                configId: currentConfigId,
+                app_runtime_id: app_runtime_id
             })
         })
         .then(response => response.json())
@@ -560,7 +562,7 @@
         };
         
         const method = gtId ? 'PUT' : 'POST';
-        const url = gtId ? '/update_env_config' : '/add_env_config';
+        const url = gtId ? '{{ url_for("env_config.update_env_config") }}' : '{{ url_for("env_config.add_env_config") }}';
         
         fetch(url, {
             method: method,
@@ -630,7 +632,7 @@
     function confirmDelete() {
         if (!currentDeleteId) return;
         
-        fetch(`/delete_env_config/${currentDeleteId}`, {
+        fetch(`{{ url_for("env_config.delete_env_config", gt_id=0) }}`.replace('0', currentDeleteId), {
             method: 'DELETE'
         })
         .then(response => response.json())
@@ -683,7 +685,7 @@
     function loadConfigs() {
         console.log('Loading configurations...');
         
-        fetch('/get_env_configs')
+        fetch('{{ url_for("env_config.get_env_configs") }}')
             .then(response => {
                 console.log('Response received:', response);
                 return response.json();
@@ -701,7 +703,7 @@
     
     // Load active connections
     function loadActiveConnections() {
-        fetch('/get_active_connections')
+        fetch('{{ url_for("env_config.get_active_connections") }}?app_runtime_id=' + app_runtime_id)
             .then(response => response.json())
             .then(data => {
                 activeConnections = data;
@@ -847,7 +849,7 @@
             </div>
         `);
         
-        fetch('/test_connection', {
+        fetch('{{ url_for("env_config.test_connection") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

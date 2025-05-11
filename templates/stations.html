@@ -11,14 +11,22 @@
 
 .station-card {
     margin-bottom: 20px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+}
+
+.station-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
 .station-type-badge {
-    padding: 5px 10px;
-    border-radius: 15px;
-    font-size: 0.8rem;
-    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
 .station-type-INPUT {
@@ -37,73 +45,197 @@
 }
 
 .color-preview {
-    width: 25px;
-    height: 25px;
+    width: 28px;
+    height: 28px;
     display: inline-block;
     border-radius: 50%;
     vertical-align: middle;
     margin-right: 10px;
-    border: 1px solid #ddd;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
 }
 
 .station-icon {
     font-size: 1.2rem;
     margin-right: 10px;
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+    border-radius: 50%;
+    background-color: rgba(155, 89, 182, 0.1);
 }
 
 .rule-groups-list {
-    max-height: 200px;
+    max-height: 230px;
     overflow-y: auto;
     border: 1px solid #eee;
     padding: 10px;
-    border-radius: 4px;
+    border-radius: 6px;
+    background-color: #f8f9fa;
 }
 
 .mapping-item {
-    padding: 8px;
-    margin-bottom: 5px;
-    border-radius: 4px;
-    background-color: #f8f9fa;
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    background-color: white;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
 }
 
 .mapping-item:hover {
-    background-color: #e9ecef;
+    background-color: #f0f4f8;
 }
 
 .sequence-number {
     font-weight: bold;
+    color: #9b59b6;
+    margin-right: 10px;
+    width: 24px;
+    height: 24px;
+    line-height: 24px;
+    text-align: center;
+    border-radius: 50%;
+    background-color: rgba(155, 89, 182, 0.1);
+}
+
+.stations-summary {
+    margin-bottom: 20px;
+}
+
+.stations-summary-card {
+    border-left: 4px solid #9b59b6;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.station-visual {
+    width: 100%;
+    height: 170px;
+    background-color: #f5f0f7;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.station-item {
+    transition: all 0.3s ease;
+}
+
+.station-item:hover {
+    background-color: rgba(155, 89, 182, 0.05);
+}
+
+.station-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.station-detail-label {
+    font-size: 0.75rem;
     color: #6c757d;
-    margin-right: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+}
+
+.station-rules-badge {
+    background-color: #9b59b6;
+    color: white;
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    border-radius: 10px;
 }
 {% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h4 class="card-title mb-0">Stations</h4>
-            <button class="btn btn-primary" onclick="openNewStationModal()">
-                <i class="fas fa-plus me-2"></i>New Station
-            </button>
+<div class="container-fluid">
+    <!-- Stations Summary -->
+    <div class="row stations-summary">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm stations-summary-card">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">Station Management</h4>
+                    <div class="row">
+                        <div class="col-md-4 text-center mb-3">
+                            <div class="d-flex align-items-center justify-content-center mb-2">
+                                <div class="station-type-badge station-type-INPUT">INPUT</div>
+                            </div>
+                            <h3 id="inputStationCount">0</h3>
+                            <p class="text-muted mb-0">Input Stations</p>
+                        </div>
+                        <div class="col-md-4 text-center mb-3">
+                            <div class="d-flex align-items-center justify-content-center mb-2">
+                                <div class="station-type-badge station-type-PROCESS">PROCESS</div>
+                            </div>
+                            <h3 id="processStationCount">0</h3>
+                            <p class="text-muted mb-0">Process Stations</p>
+                        </div>
+                        <div class="col-md-4 text-center mb-3">
+                            <div class="d-flex align-items-center justify-content-center mb-2">
+                                <div class="station-type-badge station-type-OUTPUT">OUTPUT</div>
+                            </div>
+                            <h3 id="outputStationCount">0</h3>
+                            <p class="text-muted mb-0">Output Stations</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Station Name</th>
-                        <th>Type</th>
-                        <th>Icon</th>
-                        <th>Color</th>
-                        <th>Rule Groups</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="stationTableBody"></tbody>
-            </table>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">Quick Access</h5>
+                    <p class="text-muted">Create and manage stations in your workflow</p>
+                    <button class="btn btn-primary mt-auto" onclick="openNewStationModal()">
+                        <i class="fas fa-plus me-2"></i>New Station
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Station Cards -->
+    <div class="row" id="stationCardsContainer">
+        <!-- Station cards will be dynamically inserted here -->
+    </div>
+    
+    <!-- Stations Table (Alternate View) -->
+    <div class="card border-0 shadow-sm mt-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">All Stations</h5>
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-sm btn-outline-secondary active" id="tableViewBtn">
+                    <i class="fas fa-list me-1"></i> Table View
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="cardViewBtn">
+                    <i class="fas fa-th-large me-1"></i> Card View
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Station Name</th>
+                            <th>Type</th>
+                            <th>Icon</th>
+                            <th>Color</th>
+                            <th>Rule Groups</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stationTableBody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -158,7 +290,7 @@
                                 <span class="input-group-text">
                                     <span id="colorPreview" class="color-preview" style="background-color: #9b59b6;"></span>
                                 </span>
-                                <input type="color" class="form-control form-control-color" id="stationColor" value="#9b59b6" onchange="updateColorPreview()">
+                                <input type="color" class="form-control form-control-color w-100" id="stationColor" value="#9b59b6" onchange="updateColorPreview()">
                             </div>
                         </div>
                     </div>
@@ -174,7 +306,13 @@
                             <div class="col-md-6">
                                 <label>Available Rule Groups</label>
                                 <div class="rule-groups-list">
-                                    <ul id="availableRuleGroups" class="list-group">
+                                    <div class="input-group mb-2">
+                                        <input type="text" class="form-control form-control-sm" placeholder="Search rule groups" id="ruleGroupSearchInput">
+                                        <button class="btn btn-sm btn-outline-secondary" type="button">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    </div>
+                                    <ul id="availableRuleGroups" class="list-group list-group-flush">
                                         <!-- Will be populated dynamically -->
                                     </ul>
                                 </div>
@@ -182,7 +320,7 @@
                             <div class="col-md-6">
                                 <label>Assigned Rule Groups</label>
                                 <div class="rule-groups-list">
-                                    <ul id="assignedRuleGroups" class="list-group">
+                                    <ul id="assignedRuleGroups" class="list-group list-group-flush">
                                         <!-- Will be populated dynamically -->
                                     </ul>
                                 </div>
@@ -217,78 +355,300 @@
         </div>
     </div>
 </div>
+
+<!-- Rule Groups Viewer Modal -->
+<div class="modal fade" id="ruleGroupsViewerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Rule Groups for <span id="stationNameInViewer"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Sequence</th>
+                                <th>Rule Group</th>
+                                <th>Required</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ruleGroupsViewerBody">
+                            <!-- Will be populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
+    // Variables for managing state
     let currentDeleteId = null;
     let allRuleGroups = [];
     let assignedGroups = [];
     const stationModal = new bootstrap.Modal(document.getElementById('stationModal'));
     const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    const ruleGroupsViewerModal = new bootstrap.Modal(document.getElementById('ruleGroupsViewerModal'));
 
-    // Load stations when page loads
+    // Mock data for stations and rule groups
+    const mockStations = [
+        {
+            STATION_ID: 1,
+            STATION_NAME: 'Data Input',
+            STATION_TYPE: 'INPUT',
+            ICON: 'fa-file-alt',
+            COLOR_CODE: '#3498db',
+            DESCRIPTION: 'Initial data entry station'
+        },
+        {
+            STATION_ID: 2,
+            STATION_NAME: 'Data Processing',
+            STATION_TYPE: 'PROCESS',
+            ICON: 'fa-cog',
+            COLOR_CODE: '#2ecc71',
+            DESCRIPTION: 'Main data transformation and processing'
+        },
+        {
+            STATION_ID: 3,
+            STATION_NAME: 'Report Generation',
+            STATION_TYPE: 'OUTPUT',
+            ICON: 'fa-chart-line',
+            COLOR_CODE: '#e74c3c',
+            DESCRIPTION: 'Final report generation and export'
+        }
+    ];
+
+    const mockRuleGroups = [
+        { GRG_ID: 1, GROUP_NAME: 'Validation Rules', DESCRIPTION: 'Basic data validation rules' },
+        { GRG_ID: 2, GROUP_NAME: 'Business Logic', DESCRIPTION: 'Core business logic rules' },
+        { GRG_ID: 3, GROUP_NAME: 'Formatting Rules', DESCRIPTION: 'Output formatting rules' },
+        { GRG_ID: 4, GROUP_NAME: 'Security Rules', DESCRIPTION: 'Security and access control rules' }
+    ];
+
+    // Load stations and rule groups when page loads
     document.addEventListener('DOMContentLoaded', function() {
         loadStations();
         loadRuleGroups();
+        
+        // Set up view toggle buttons
+        document.getElementById('tableViewBtn').addEventListener('click', function() {
+            document.getElementById('tableViewBtn').classList.add('active');
+            document.getElementById('cardViewBtn').classList.remove('active');
+            document.getElementById('stationCardsContainer').style.display = 'none';
+            document.querySelector('.table-responsive').style.display = 'block';
+        });
+        
+        document.getElementById('cardViewBtn').addEventListener('click', function() {
+            document.getElementById('cardViewBtn').classList.add('active');
+            document.getElementById('tableViewBtn').classList.remove('active');
+            document.getElementById('stationCardsContainer').style.display = 'flex';
+            document.querySelector('.table-responsive').style.display = 'none';
+        });
+        
+        // Trigger table view by default
+        document.getElementById('tableViewBtn').click();
+        
+        // Set up rule group search
+        document.getElementById('ruleGroupSearchInput').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const availableGroups = document.querySelectorAll('#availableRuleGroups li');
+            
+            availableGroups.forEach(group => {
+                const text = group.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    group.style.display = '';
+                } else {
+                    group.style.display = 'none';
+                }
+            });
+        });
     });
 
     function loadStations() {
-        fetch('/get_stations')
-            .then(response => response.json())
-            .then(data => {
-                const tableBody = document.getElementById('stationTableBody');
-                tableBody.innerHTML = '';
-                
-                data.forEach(station => {
-                    const stationTypeClass = `station-type-${station.STATION_TYPE || 'PROCESS'}`;
-                    const row = `
-                        <tr>
-                            <td>${station.STATION_NAME}</td>
-                            <td>
+        // Use the mock data directly
+        updateStationCounters(mockStations);
+        renderStationTable(mockStations);
+        renderStationCards(mockStations);
+    }
+    
+    function updateStationCounters(stations) {
+        let inputCount = 0;
+        let processCount = 0;
+        let outputCount = 0;
+        
+        stations.forEach(station => {
+            const type = station.STATION_TYPE || 'PROCESS';
+            if (type === 'INPUT') inputCount++;
+            else if (type === 'PROCESS') processCount++;
+            else if (type === 'OUTPUT') outputCount++;
+        });
+        
+        document.getElementById('inputStationCount').textContent = inputCount;
+        document.getElementById('processStationCount').textContent = processCount;
+        document.getElementById('outputStationCount').textContent = outputCount;
+    }
+    
+    function renderStationTable(stations) {
+        const tableBody = document.getElementById('stationTableBody');
+        tableBody.innerHTML = '';
+        
+        stations.forEach(station => {
+            const stationTypeClass = `station-type-${station.STATION_TYPE || 'PROCESS'}`;
+            const row = `
+                <tr class="station-item">
+                    <td>
+                        <div class="station-header">
+                            <span class="color-preview" style="background-color: ${station.COLOR_CODE || '#9b59b6'};"></span>
+                            <span>${station.STATION_NAME}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="station-type-badge ${stationTypeClass}">
+                            ${station.STATION_TYPE || 'PROCESS'}
+                        </span>
+                    </td>
+                    <td>
+                        <i class="fas ${station.ICON || 'fa-cog'} station-icon"></i>
+                    </td>
+                    <td>
+                        <code>${station.COLOR_CODE || '#9b59b6'}</code>
+                    </td>
+                    <td>
+                        <span class="station-rules-badge">
+                            ${getStationRuleGroupsCount(station.STATION_ID)} groups
+                        </span>
+                    </td>
+                    <td class="action-buttons">
+                        <button class="btn btn-info btn-sm" onclick="viewRuleGroups(${station.STATION_ID}, '${station.STATION_NAME}')">
+                            <i class="fas fa-list"></i>
+                        </button>
+                        <button class="btn btn-warning btn-sm" onclick="editStation(${station.STATION_ID})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteStation(${station.STATION_ID})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+            tableBody.innerHTML += row;
+        });
+        
+        // If no stations
+        if (stations.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center py-4">
+                        <div class="text-muted">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No stations found. Create your first station to get started.
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+    }
+    
+    function renderStationCards(stations) {
+        const cardsContainer = document.getElementById('stationCardsContainer');
+        cardsContainer.innerHTML = '';
+        
+        stations.forEach(station => {
+            const stationTypeClass = `station-type-${station.STATION_TYPE || 'PROCESS'}`;
+            const card = `
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card station-card border-0">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="card-title mb-0">${station.STATION_NAME}</h5>
                                 <span class="station-type-badge ${stationTypeClass}">
                                     ${station.STATION_TYPE || 'PROCESS'}
                                 </span>
-                            </td>
-                            <td>
-                                <i class="fas ${station.ICON || 'fa-cog'} station-icon"></i>
-                            </td>
-                            <td>
-                                <span class="color-preview" style="background-color: ${station.COLOR_CODE || '#9b59b6'};"></span>
-                                ${station.COLOR_CODE || '#9b59b6'}
-                            </td>
-                            <td>${getStationRuleGroupsCount(station.STATION_ID)}</td>
-                            <td class="action-buttons">
-                                <button class="btn btn-info btn-sm" onclick="viewRuleGroups(${station.STATION_ID})">
-                                    <i class="fas fa-list"></i>
+                            </div>
+                            
+                            <div class="station-visual" style="background-color: ${lightenColor(station.COLOR_CODE || '#9b59b6', 0.9)}">
+                                <i class="fas ${station.ICON || 'fa-cog'} mb-2" style="font-size: 48px; color: ${station.COLOR_CODE || '#9b59b6'};"></i>
+                                <div class="badge bg-light text-dark">
+                                    ${getStationRuleGroupsCount(station.STATION_ID)} Rule Groups
+                                </div>
+                            </div>
+                            
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <div class="station-detail-label">Color</div>
+                                    <div>
+                                        <span class="color-preview" style="background-color: ${station.COLOR_CODE || '#9b59b6'};"></span>
+                                        <code>${station.COLOR_CODE || '#9b59b6'}</code>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="station-detail-label">Icon</div>
+                                    <div>
+                                        <i class="fas ${station.ICON || 'fa-cog'} station-icon"></i>
+                                        ${formatIconName(station.ICON || 'fa-cog')}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <p class="text-muted mt-3">${station.DESCRIPTION || 'No description provided.'}</p>
+                            
+                            <div class="d-flex justify-content-between mt-3">
+                                <button class="btn btn-sm btn-info" onclick="viewRuleGroups(${station.STATION_ID}, '${station.STATION_NAME}')">
+                                    <i class="fas fa-list me-1"></i> Rules
                                 </button>
-                                <button class="btn btn-warning btn-sm" onclick="editStation(${station.STATION_ID})">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-danger btn-sm" onclick="deleteStation(${station.STATION_ID})">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                    tableBody.innerHTML += row;
-                });
-            });
+                                <div>
+                                    <button class="btn btn-sm btn-warning" onclick="editStation(${station.STATION_ID})">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger ms-1" onclick="deleteStation(${station.STATION_ID})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            cardsContainer.innerHTML += card;
+        });
+        
+        // If no stations
+        if (stations.length === 0) {
+            cardsContainer.innerHTML = `
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center py-5">
+                            <i class="fas fa-desktop mb-3" style="font-size: 48px; color: #ccc;"></i>
+                            <h5>No Stations Found</h5>
+                            <p class="text-muted">Create your first station to get started.</p>
+                            <button class="btn btn-primary" onclick="openNewStationModal()">
+                                <i class="fas fa-plus me-2"></i>Create Station
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
     }
     
     function getStationRuleGroupsCount(stationId) {
-        // In a real implementation, this would fetch from the database
-        // For now, we'll return a placeholder
-        return '0 groups';
+        // Return a random number between 0 and 5
+        return Math.floor(Math.random() * 5);
     }
     
     function loadRuleGroups() {
-        fetch('/get_rule_groups')
-            .then(response => response.json())
-            .then(data => {
-                allRuleGroups = data;
-                updateRuleGroupsLists();
-            });
+        // Use mock data directly
+        allRuleGroups = mockRuleGroups;
+        updateRuleGroupsLists();
     }
     
     function updateRuleGroupsLists() {
@@ -305,9 +665,12 @@
             
             if (!isAssigned) {
                 availableList.innerHTML += `
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        ${group.GROUP_NAME}
-                        <button class="btn btn-sm btn-primary" onclick="assignRuleGroup(${group.GRG_ID}, '${group.GROUP_NAME}')">
+                    <li class="list-group-item d-flex justify-content-between align-items-center border-0 py-2">
+                        <div>
+                            <span>${group.GROUP_NAME}</span>
+                            <small class="text-muted d-block">${group.DESCRIPTION || ''}</small>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary" onclick="assignRuleGroup(${group.GRG_ID}, '${group.GROUP_NAME}', '${group.DESCRIPTION || ''}')">
                             <i class="fas fa-plus"></i>
                         </button>
                     </li>
@@ -318,21 +681,33 @@
         // Populate assigned rule groups
         assignedGroups.forEach((group, index) => {
             assignedList.innerHTML += `
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <span>
-                        <span class="sequence-number">${index + 1}.</span>
-                        ${group.name}
-                    </span>
-                    <div>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="moveRuleGroup(${index}, 'up')" ${index === 0 ? 'disabled' : ''}>
-                            <i class="fas fa-arrow-up"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="moveRuleGroup(${index}, 'down')" ${index === assignedGroups.length - 1 ? 'disabled' : ''}>
-                            <i class="fas fa-arrow-down"></i>
-                        </button>
-                        <button class="btn btn-sm btn-danger" onclick="removeRuleGroup(${index})">
-                            <i class="fas fa-times"></i>
-                        </button>
+                <li class="list-group-item border-0 py-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <span class="sequence-number">${index + 1}</span>
+                            <div>
+                                <span>${group.name}</span>
+                                <small class="text-muted d-block">${group.description || ''}</small>
+                            </div>
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-outline-secondary me-1" onclick="moveRuleGroup(${index}, 'up')" ${index === 0 ? 'disabled' : ''}>
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary me-1" onclick="moveRuleGroup(${index}, 'down')" ${index === assignedGroups.length - 1 ? 'disabled' : ''}>
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="removeRuleGroup(${index})">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" id="isRequired-${index}" 
+                               ${group.isRequired ? 'checked' : ''} onchange="toggleRequired(${index})">
+                        <label class="form-check-label" for="isRequired-${index}">
+                            Required for station processing
+                        </label>
                     </div>
                 </li>
             `;
@@ -340,12 +715,12 @@
         
         // If no available groups
         if (availableList.innerHTML === '') {
-            availableList.innerHTML = '<li class="list-group-item text-muted">No available rule groups</li>';
+            availableList.innerHTML = '<li class="list-group-item border-0 text-center text-muted py-3">No available rule groups</li>';
         }
         
         // If no assigned groups
         if (assignedList.innerHTML === '') {
-            assignedList.innerHTML = '<li class="list-group-item text-muted">No rule groups assigned</li>';
+            assignedList.innerHTML = '<li class="list-group-item border-0 text-center text-muted py-3">No rule groups assigned</li>';
         }
     }
     
@@ -361,34 +736,40 @@
     }
     
     function editStation(stationId) {
-        fetch(`/get_stations`)
-            .then(response => response.json())
-            .then(data => {
-                const station = data.find(s => s.STATION_ID === stationId);
-                if (station) {
-                    document.getElementById('modalTitle').textContent = 'Edit Station';
-                    document.getElementById('stationId').value = station.STATION_ID;
-                    document.getElementById('stationName').value = station.STATION_NAME;
-                    document.getElementById('stationType').value = station.STATION_TYPE || 'PROCESS';
-                    document.getElementById('stationIcon').value = station.ICON || 'fa-cog';
-                    document.getElementById('stationColor').value = station.COLOR_CODE || '#9b59b6';
-                    document.getElementById('stationDescription').value = station.DESCRIPTION || '';
-                    
-                    updateIconPreview();
-                    updateColorPreview();
-                    
-                    // Fetch assigned rule groups
-                    // In a real implementation, this would fetch from the database
-                    assignedGroups = [];
-                    updateRuleGroupsLists();
-                    
-                    stationModal.show();
-                }
-            });
+        // Find the station in our mock data
+        const station = mockStations.find(s => s.STATION_ID === stationId);
+        
+        if (station) {
+            document.getElementById('modalTitle').textContent = 'Edit Station';
+            document.getElementById('stationId').value = station.STATION_ID;
+            document.getElementById('stationName').value = station.STATION_NAME;
+            document.getElementById('stationType').value = station.STATION_TYPE || 'PROCESS';
+            document.getElementById('stationIcon').value = station.ICON || 'fa-cog';
+            document.getElementById('stationColor').value = station.COLOR_CODE || '#9b59b6';
+            document.getElementById('stationDescription').value = station.DESCRIPTION || '';
+            
+            updateIconPreview();
+            updateColorPreview();
+            
+            // Mock assigned rule groups
+            assignedGroups = stationId % 2 === 0
+                ? [
+                    { grgId: 1, name: 'Validation Rules', description: 'Basic data validation rules', isRequired: true },
+                    { grgId: 3, name: 'Formatting Rules', description: 'Output formatting rules', isRequired: false }
+                  ]
+                : [
+                    { grgId: 2, name: 'Business Logic', description: 'Core business logic rules', isRequired: true }
+                  ];
+            
+            updateRuleGroupsLists();
+            stationModal.show();
+        } else {
+            showToast('Error', 'Station not found', 'error');
+        }
     }
     
     function saveStation() {
-        const stationId = document.getElementById('stationId').value;
+        const stationId = parseInt(document.getElementById('stationId').value);
         const stationName = document.getElementById('stationName').value;
         const stationType = document.getElementById('stationType').value;
         const stationIcon = document.getElementById('stationIcon').value;
@@ -396,48 +777,37 @@
         const stationDescription = document.getElementById('stationDescription').value;
         
         if (!stationName) {
-            alert('Station Name is required.');
+            showToast('Error', 'Station Name is required.', 'error');
             return;
         }
         
-        const data = {
-            stationId: stationId,
-            stationName: stationName,
-            stationType: stationType,
-            icon: stationIcon,
-            colorCode: stationColor,
-            description: stationDescription,
-            ruleGroups: assignedGroups.map((group, index) => ({
-                grgId: group.grgId,
-                sequence: index + 1,
-                isRequired: group.isRequired || false
-            }))
+        // Create a new station object
+        const newStation = {
+            STATION_ID: stationId || Math.floor(Math.random() * 1000),
+            STATION_NAME: stationName,
+            STATION_TYPE: stationType,
+            ICON: stationIcon,
+            COLOR_CODE: stationColor,
+            DESCRIPTION: stationDescription
         };
         
-        const method = stationId ? 'PUT' : 'POST';
-        const url = stationId ? '/update_station' : '/add_station';
-        
-        fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.success) {
-                stationModal.hide();
-                loadStations();
-                showToast('Success', result.message);
-            } else {
-                showToast('Error', result.message, 'error');
+        // Update or add the station in our mock data
+        if (stationId) {
+            // Update existing station
+            const index = mockStations.findIndex(s => s.STATION_ID === stationId);
+            if (index !== -1) {
+                mockStations[index] = newStation;
             }
-        })
-        .catch(error => {
-            showToast('Error', 'An error occurred while saving the station', 'error');
-            console.error('Error:', error);
-        });
+        } else {
+            // Add new station
+            mockStations.push(newStation);
+        }
+        
+        stationModal.hide();
+        
+        // Refresh UI
+        loadStations();
+        showToast('Success', stationId ? 'Station updated successfully!' : 'Station created successfully!');
     }
     
     function deleteStation(stationId) {
@@ -448,37 +818,72 @@
     function confirmDelete() {
         if (!currentDeleteId) return;
         
-        fetch(`/delete_station/${currentDeleteId}`, {
-            method: 'DELETE'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                deleteModal.hide();
-                loadStations();
-                showToast('Success', data.message);
-            } else {
-                showToast('Error', data.message, 'error');
-            }
-        })
-        .catch(error => {
-            showToast('Error', 'An error occurred while deleting the station', 'error');
-            console.error('Error:', error);
+        // Remove the station from our mock data
+        const index = mockStations.findIndex(s => s.STATION_ID === currentDeleteId);
+        if (index !== -1) {
+            mockStations.splice(index, 1);
+        }
+        
+        deleteModal.hide();
+        
+        // Refresh UI
+        loadStations();
+        showToast('Success', 'Station deleted successfully!');
+    }
+    
+    function viewRuleGroups(stationId, stationName) {
+        document.getElementById('stationNameInViewer').textContent = stationName;
+        const ruleGroupsViewerBody = document.getElementById('ruleGroupsViewerBody');
+        ruleGroupsViewerBody.innerHTML = '';
+        
+        // Get mock rule groups for this station
+        const mockRuleGroups = stationId % 2 === 0
+            ? [
+                { sequence: 1, name: 'Validation Rules', isRequired: true, description: 'Basic data validation rules' },
+                { sequence: 2, name: 'Formatting Rules', isRequired: false, description: 'Output formatting rules' }
+              ]
+            : [
+                { sequence: 1, name: 'Business Logic', isRequired: true, description: 'Core business logic rules' }
+              ];
+        
+        mockRuleGroups.forEach(group => {
+            const row = `
+                <tr>
+                    <td>${group.sequence}</td>
+                    <td>${group.name}</td>
+                    <td>
+                        <span class="badge ${group.isRequired ? 'bg-success' : 'bg-secondary'}">
+                            ${group.isRequired ? 'Required' : 'Optional'}
+                        </span>
+                    </td>
+                    <td>${group.description || ''}</td>
+                </tr>
+            `;
+            ruleGroupsViewerBody.innerHTML += row;
         });
+        
+        // If no rule groups
+        if (mockRuleGroups.length === 0) {
+            ruleGroupsViewerBody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="text-center py-3">
+                        <div class="text-muted">No rule groups assigned to this station</div>
+                    </td>
+                </tr>
+            `;
+        }
+        
+        ruleGroupsViewerModal.show();
     }
     
-    function viewRuleGroups(stationId) {
-        // Placeholder for showing rule groups assigned to a station
-        alert('Rule groups viewer will be implemented in a future version.');
-    }
-    
-    function assignRuleGroup(grgId, name) {
+    function assignRuleGroup(grgId, name, description) {
         const group = allRuleGroups.find(g => g.GRG_ID === grgId);
         
         if (group) {
             assignedGroups.push({
                 grgId: grgId,
                 name: name,
+                description: description,
                 isRequired: false
             });
             
@@ -503,6 +908,12 @@
         updateRuleGroupsLists();
     }
     
+    function toggleRequired(index) {
+        if (index >= 0 && index < assignedGroups.length) {
+            assignedGroups[index].isRequired = document.getElementById(`isRequired-${index}`).checked;
+        }
+    }
+    
     function updateIconPreview() {
         const icon = document.getElementById('stationIcon').value;
         const preview = document.getElementById('iconPreview');
@@ -516,6 +927,72 @@
         const preview = document.getElementById('colorPreview');
         
         preview.style.backgroundColor = color;
+    }
+    
+    function formatIconName(iconClass) {
+        // Convert fa-icon-name to Icon Name
+        return iconClass
+            .replace('fa-', '')
+            .split('-')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    }
+    
+    function lightenColor(color, factor) {
+        // Convert hex to RGB
+        let r, g, b;
+        if (color.startsWith('#')) {
+            const hex = color.substring(1);
+            r = parseInt(hex.substring(0, 2), 16);
+            g = parseInt(hex.substring(2, 4), 16);
+            b = parseInt(hex.substring(4, 6), 16);
+        } else {
+            // Default color if invalid
+            r = 155; g = 89; b = 182; // #9b59b6
+        }
+        
+        // Lighten
+        r = Math.floor(r + (255 - r) * factor);
+        g = Math.floor(g + (255 - g) * factor);
+        b = Math.floor(b + (255 - b) * factor);
+        
+        // Convert back to hex
+        return `rgb(${r}, ${g}, ${b})`;
+    }
+    
+    // Simple toast notification function
+    function showToast(title, message, type = 'success') {
+        // Create bootstrap toast or alert
+        const toastEl = document.createElement('div');
+        toastEl.className = `toast position-fixed top-0 end-0 m-3 bg-${type === 'success' ? 'success' : 'danger'} text-white`;
+        toastEl.setAttribute('role', 'alert');
+        toastEl.innerHTML = `
+            <div class="toast-header">
+                <strong class="me-auto">${title}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body">${message}</div>
+        `;
+        
+        document.body.appendChild(toastEl);
+        
+        // Use Bootstrap toast if available
+        if (typeof bootstrap !== 'undefined') {
+            const bsToast = new bootstrap.Toast(toastEl);
+            bsToast.show();
+            
+            // Auto-remove after being hidden
+            toastEl.addEventListener('hidden.bs.toast', () => {
+                document.body.removeChild(toastEl);
+            });
+        } else {
+            // Simple fallback
+            toastEl.style.display = 'block';
+            setTimeout(() => {
+                toastEl.style.display = 'none';
+                document.body.removeChild(toastEl);
+            }, 3000);
+        }
     }
 </script>
 {% endblock %}
