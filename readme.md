@@ -1,4 +1,4 @@
-# SLEP Application with Oracle Integration
+# GEE Application with Oracle Integration
 
 This application provides a management interface for field classes, fields, tables, and environments with Oracle database integration.
 
@@ -7,7 +7,7 @@ This application provides a management interface for field classes, fields, tabl
 The application has been restructured for better maintainability:
 
 ```
-slep-app/
+gee-app/
 ├── app.py                  # Main application file
 ├── db_helpers.py           # Database helper functions
 ├── oracle_helpers.py       # Oracle connectivity functions
@@ -19,7 +19,7 @@ slep-app/
 │   ├── fields.py           # Field management routes
 │   ├── tables.py           # Table management routes
 ├── instance/               # SQLite database location
-│   └── SLEP.db             # SQLite database
+│   └── GEE.db              # SQLite database
 ├── static/                 # Static files
 └── templates/              # HTML templates
 ```

@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Load active database connections
 function loadConnections() {
-    fetch('/get_active_connections')
+    fetch('/tables/get_active_connections_for_tables')
         .then(response => response.json())
         .then(data => {
             connections = data;
@@ -47,7 +47,7 @@ function loadConnections() {
 function updateConnectionSelector(connectionsData) {
     const select = document.getElementById('connectionSelect');
     // Keep the first option (Internal Database)
-    select.innerHTML = '<option value="">Internal Database (SLEP.db)</option>';
+    select.innerHTML = '<option value="">Internal Database (GEE.db)</option>';
     
     // Add active connections
     for (const [handle, details] of Object.entries(connectionsData)) {
@@ -110,11 +110,11 @@ function changeConnection() {
 
 // Load tables
 function loadTables(connectionHandle = null) {
-    let url = '/get_tables';
+    let url = '/tables/get_tables';
     if (connectionHandle) {
         url += `?connection_handle=${connectionHandle}`;
     }
-    
+
     fetch(url)
         .then(response => response.json())
         .then(data => {
@@ -375,7 +375,7 @@ function deleteTable(gecId) {
 function confirmDelete() {
     if (!currentDeleteId) return;
     
-    fetch(`/delete_table/${currentDeleteId}`, {
+    fetch(`/tables/delete_table/${currentDeleteId}`, {
         method: 'DELETE'
     })
     .then(response => response.json())
@@ -421,8 +421,8 @@ function saveTable() {
     };
     
     const method = gecId ? 'PUT' : 'POST';
-    const url = gecId ? '/update_table' : '/add_table';
-    
+    const url = gecId ? '/tables/update_table' : '/tables/add_table';
+
     fetch(url, {
         method: method,
         headers: {
@@ -485,7 +485,7 @@ function testQuery() {
         </tr>
     `;
     
-    fetch('/test_query', {
+    fetch('/tables/test_query', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -690,7 +690,7 @@ function startImport() {
         progressBar.style.width = `${progress}%`;
         
         // Import the table
-        fetch('/import_table_structure', {
+        fetch('/tables/import_table_structure', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

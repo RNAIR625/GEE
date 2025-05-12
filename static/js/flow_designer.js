@@ -1,4 +1,4 @@
-// SLEP Flow Designer JavaScript
+// GEE Flow Designer JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
     // Canvas and element references

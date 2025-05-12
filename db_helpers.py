@@ -2,7 +2,7 @@ import sqlite3
 import os
 from flask import g
 
-DATABASE = 'instance/SLEP.db'
+DATABASE = 'instance/GEE.db'
 
 # Database connection helper functions
 def get_db():
