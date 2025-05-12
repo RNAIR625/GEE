@@ -142,6 +142,9 @@
         <a href="{{ url_for('function') }}" class="sidebar-item {% if active_page == 'function' %}active{% endif %}">
             <i class="fas fa-code me-2"></i> Functions
         </a>
+        <a href="{{ url_for('rules.rules_page') }}" class="sidebar-item {% if active_page == 'rules' %}active{% endif %}">
+            <i class="fas fa-tasks me-2"></i> Rules
+        </a>
         <a href="{{ url_for('rule_groups.rule_groups_page') }}" class="sidebar-item {% if active_page == 'rule_groups' %}active{% endif %}">
             <i class="fas fa-list-check me-2"></i> Rule Groups
         </a>

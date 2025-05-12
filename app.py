@@ -14,6 +14,7 @@ from routes.fields import fields_bp
 from routes.env_config import env_config_bp
 from routes.tables import tables_bp
 from routes.rule_groups import rule_groups_bp
+from routes.rules import rules_bp  # Add the new rules blueprint
 
 app = Flask(__name__)
 
@@ -33,6 +34,7 @@ app.register_blueprint(fields_bp, url_prefix='/fields')
 app.register_blueprint(env_config_bp, url_prefix='/env_config')
 app.register_blueprint(tables_bp, url_prefix='/tables')
 app.register_blueprint(rule_groups_bp, url_prefix='/rule_groups')
+app.register_blueprint(rules_bp, url_prefix='/rules')  # Register the rules blueprint
 
 # Make APP_RUNTIME_ID available to all templates
 @app.context_processor
@@ -62,12 +64,12 @@ if __name__ == '__main__':
     
     # Clean up any old connections left by previous runs with the same app ID
     # This should never happen in practice, but it's a safety measure
-    #with app.app_context():
-    #    try:
-    #        from db_helpers import modify_db
-    #        modify_db('DELETE FROM GEE_ACTIVE_CONNECTIONS WHERE APP_RUNTIME_ID = ?', (APP_RUNTIME_ID,))
-    #    except Exception as e:
-    #        print(f"Error cleaning up old connections: {str(e)}")
+    with app.app_context():
+        try:
+            from db_helpers import modify_db
+            modify_db('DELETE FROM GEE_ACTIVE_CONNECTIONS WHERE APP_RUNTIME_ID = ?', (APP_RUNTIME_ID,))
+        except Exception as e:
+            print(f"Error cleaning up old connections: {str(e)}")
     
     # Start the Flask app on a different port
     app.run(debug=True)

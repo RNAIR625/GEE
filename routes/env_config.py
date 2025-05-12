@@ -159,7 +159,8 @@ def store_connection():
     data = request.json
     handle = data.get('handle')
     config_id = data.get('configId')
-    app_runtime_id = data.get('app_runtime_id')
+    app_runtime_id = data.get('app_runtime_id')    
+    #pdb.set_trace()
     
     if not handle or not config_id or not app_runtime_id:
         return jsonify({

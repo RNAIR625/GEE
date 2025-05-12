@@ -151,6 +151,7 @@ def get_tables():
 @tables_bp.route('/get_active_connections_for_tables')
 def get_active_connections_for_tables():
     app_runtime_id = request.args.get('app_runtime_id')
+    
     if not app_runtime_id:
         return jsonify({})
         
