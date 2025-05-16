@@ -1,50 +1,50 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
-{% block title %}Rules Management{% endblock %}
+{% block title %}Rules{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0">Rules Management</h1>
-        <button class="btn btn-primary" onclick="openNewRuleModal()">
-            <i class="fas fa-plus me-2"></i>Add New Rule
-        </button>
-    </div>
-
+<div class="container-fluid">
     <div class="card">
-        <div class="card-header">
-            <div class="row align-items-center">
-                <div class="col-md-6 mb-2 mb-md-0">
-                    <h5 class="mb-0">Rule List</h5>
-                    <p class="text-muted small mb-0" id="ruleCount">0 rules</p>
-                </div>
-                <div class="col-md-6">
-                    <div class="d-flex flex-column flex-md-row gap-2">
-                        <div class="input-group">
-                            <span class="input-group-text bg-light">
-                                <i class="fas fa-search"></i>
-                            </span>
-                            <input type="text" class="form-control" id="searchRules" placeholder="Search rules..." oninput="searchRules()">
-                        </div>
-                        <select class="form-select" id="filterRuleType" onchange="filterRules()">
-                            <option value="">All Types</option>
-                            <option value="Standard">Standard</option>
-                            <option value="Validation">Validation</option>
-                            <option value="Calculation">Calculation</option>
-                            <option value="Transformation">Transformation</option>
-                        </select>
-                        <select class="form-select" id="filterClass" onchange="filterRules()">
-                            <option value="">All Classes</option>
-                            <!-- Will be populated from JavaScript -->
-                        </select>
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Rules</h5>
+            <button class="btn btn-light" onclick="openNewRuleModal()">
+                <i class="fas fa-plus me-1"></i>Add Rule
+            </button>
+        </div>
+        <div class="card-body">
+            <!-- Search & Filter Controls -->
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="searchRules" placeholder="Search rules...">
+                        <button class="btn btn-outline-secondary" type="button" onclick="searchRules()">
+                            <i class="fas fa-search"></i>
+                        </button>
                     </div>
                 </div>
+                <div class="col-md-3">
+                    <select class="form-select" id="filterRuleType" onchange="filterRules()">
+                        <option value="">All Rule Types</option>
+                        <option value="Standard">Standard</option>
+                        <option value="Validation">Validation</option>
+                        <option value="Calculation">Calculation</option>
+                        <option value="Transformation">Transformation</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" id="filterClass" onchange="filterRules()">
+                        <!-- Classes will be loaded here -->
+                    </select>
+                </div>
+                <div class="col-md-2 text-end">
+                    <span class="badge bg-primary" id="ruleCount">0 rules</span>
+                </div>
             </div>
-        </div>
-        <div class="card-body p-0">
+
+            <!-- Rules Table -->
             <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="bg-light">
+                <table class="table table-striped table-hover">
+                    <thead>
                         <tr>
                             <th>Rule Name</th>
                             <th>Class</th>
@@ -58,9 +58,10 @@
                         <!-- Rules will be loaded here -->
                     </tbody>
                 </table>
-            </div>
-            <div id="noRulesMessage" class="text-center py-4 text-muted">
-                <i class="fas fa-info-circle me-2"></i>No rules found. Create a new rule to get started.
+                <div id="noRulesMessage" class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    No rules found. Click the "Add Rule" button to create your first rule.
+                </div>
             </div>
         </div>
     </div>
@@ -83,7 +84,7 @@
                             <input type="text" class="form-control" id="ruleName" required>
                         </div>
                         <div class="col-md-3">
-                            <label for="ruleClass" class="form-label">Class</label>
+                            <label for="ruleClass" class="form-label">Class <span class="text-danger">*</span></label>
                             <select class="form-select" id="ruleClass">
                                 <option value="">Select Class</option>
                                 <!-- Classes will be loaded here -->
@@ -104,51 +105,136 @@
                         <textarea class="form-control" id="ruleDescription" rows="2"></textarea>
                     </div>
                     
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="card mb-3">
-                                <div class="card-header d-flex justify-content-between align-items-center">
-                                    <h5 class="mb-0">Condition</h5>
-                                    <div>
-                                        <button type="button" class="btn btn-sm btn-primary me-1" id="insertFunctionBtn" onclick="openFunctionSelector('condition')">
-                                            <i class="fas fa-code me-1"></i>Insert Function
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-secondary me-1" id="insertFieldBtn" onclick="openFieldSelector('condition')">
-                                            <i class="fas fa-database me-1"></i>Insert Field
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-success" id="testConditionBtn">
-                                            <i class="fas fa-play me-1"></i>Test
-                                        </button>
+                    <!-- Rule Creation Mode Toggle -->
+                    <div class="mb-3">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="ruleCreationMode" id="modeCodeEditor" value="codeEditor" checked>
+                            <label class="form-check-label" for="modeCodeEditor">Code Editor Mode</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="ruleCreationMode" id="modeStructured" value="structured">
+                            <label class="form-check-label" for="modeStructured">Structured Mode</label>
+                        </div>
+                    </div>
+                    
+                    <!-- Code Editor Mode -->
+                    <div id="codeEditorMode">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h5 class="mb-0">Condition</h5>
+                                        <div>
+                                            <button type="button" class="btn btn-sm btn-primary me-1" id="insertFunctionBtn">
+                                                <i class="fas fa-code me-1"></i>Insert Function
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-secondary me-1" id="insertFieldBtn">
+                                                <i class="fas fa-database me-1"></i>Insert Field
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-success" id="testConditionBtn">
+                                                <i class="fas fa-play me-1"></i>Test
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <textarea id="conditionCode" class="form-control code-editor"></textarea>
+                                        <div id="conditionResults" class="alert mt-3 d-none">
+                                            <div id="conditionResultsContent"></div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="card-body">
-                                    <textarea id="conditionCode" class="form-control code-editor"></textarea>
-                                    <div id="conditionResults" class="alert mt-3 d-none">
-                                        <div id="conditionResultsContent"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h5 class="mb-0">Action</h5>
+                                        <div>
+                                            <button type="button" class="btn btn-sm btn-primary me-1" onclick="openFunctionSelector('action')">
+                                                <i class="fas fa-code me-1"></i>Insert Function
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-secondary me-1" onclick="openFieldSelector('action')">
+                                                <i class="fas fa-database me-1"></i>Insert Field
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-success" id="testActionBtn">
+                                                <i class="fas fa-play me-1"></i>Test
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <textarea id="actionCode" class="form-control code-editor"></textarea>
+                                        <div id="actionResults" class="alert mt-3 d-none">
+                                            <div id="actionResultsContent"></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="card mb-3">
-                                <div class="card-header d-flex justify-content-between align-items-center">
-                                    <h5 class="mb-0">Action</h5>
-                                    <div>
-                                        <button type="button" class="btn btn-sm btn-primary me-1" onclick="openFunctionSelector('action')">
-                                            <i class="fas fa-code me-1"></i>Insert Function
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-secondary me-1" onclick="openFieldSelector('action')">
-                                            <i class="fas fa-database me-1"></i>Insert Field
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-success" id="testActionBtn">
-                                            <i class="fas fa-play me-1"></i>Test
+                    </div>
+                    
+                    <!-- Structured Mode -->
+                    <div id="structuredMode" class="d-none">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h5 class="mb-0">Conditions</h5>
+                                        <button type="button" class="btn btn-sm btn-primary" onclick="addRuleLine(true)">
+                                            <i class="fas fa-plus me-1"></i>Add Condition
                                         </button>
                                     </div>
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover border-bottom mb-0">
+                                                <thead class="bg-light">
+                                                    <tr>
+                                                        <th>Function</th>
+                                                        <th>Parameters</th>
+                                                        <th class="text-end">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="conditionLinesList">
+                                                    <!-- Condition lines will be loaded here -->
+                                                    <tr id="noConditionLines">
+                                                        <td colspan="3" class="text-center text-muted py-3">
+                                                            <i class="fas fa-info-circle me-2"></i>
+                                                            No condition lines defined. Add a condition line to start.
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="card-body">
-                                    <textarea id="actionCode" class="form-control code-editor"></textarea>
-                                    <div id="actionResults" class="alert mt-3 d-none">
-                                        <div id="actionResultsContent"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h5 class="mb-0">Actions</h5>
+                                        <button type="button" class="btn btn-sm btn-primary" onclick="addRuleLine(false)">
+                                            <i class="fas fa-plus me-1"></i>Add Action
+                                        </button>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover border-bottom mb-0">
+                                                <thead class="bg-light">
+                                                    <tr>
+                                                        <th>Function</th>
+                                                        <th>Parameters</th>
+                                                        <th class="text-end">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="actionLinesList">
+                                                    <!-- Action lines will be loaded here -->
+                                                    <tr id="noActionLines">
+                                                        <td colspan="3" class="text-center text-muted py-3">
+                                                            <i class="fas fa-info-circle me-2"></i>
+                                                            No action lines defined. Add an action line to start.
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -159,6 +245,129 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" id="saveRuleBtn">Save Rule</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Function Selector Modal -->
+<div class="modal fade" id="functionSelectorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Select Function</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="selectedFunctionId">
+                <input type="hidden" id="selectedFunctionName">
+                <div class="form-check form-check-inline mb-3">
+                    <input class="form-check-input" type="radio" name="insertTarget" id="insertTargetCondition" value="condition" checked>
+                    <label class="form-check-label" for="insertTargetCondition">Insert into Condition</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="insertTarget" id="insertTargetAction" value="action">
+                    <label class="form-check-label" for="insertTargetAction">Insert into Action</label>
+                </div>
+                <div class="table-responsive mt-3">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Function Name</th>
+                                <th>Parameters</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="functionsList">
+                            <!-- Functions will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="selectFunctionBtn">Insert Function</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Field Selector Modal -->
+<div class="modal fade" id="fieldSelectorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Select Field</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="selectedFieldId">
+                <input type="hidden" id="selectedFieldName">
+                <div class="form-check form-check-inline mb-3">
+                    <input class="form-check-input" type="radio" name="insertTarget" id="insertTargetCondition2" value="condition" checked>
+                    <label class="form-check-label" for="insertTargetCondition2">Insert into Condition</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="insertTarget" id="insertTargetAction2" value="action">
+                    <label class="form-check-label" for="insertTargetAction2">Insert into Action</label>
+                </div>
+                <div class="table-responsive mt-3">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Field Name</th>
+                                <th>Type</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fieldsList">
+                            <!-- Fields will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="selectFieldBtn">Insert Field</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rule Line Modal -->
+<div class="modal fade" id="ruleLineModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ruleLineModalTitle">Add Rule Line</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="ruleLineForm">
+                    <input type="hidden" id="lineId">
+                    <input type="hidden" id="isCondition">
+                    <input type="hidden" id="sequenceNum">
+                    
+                    <div class="mb-3">
+                        <label for="functionSelect" class="form-label">Function <span class="text-danger">*</span></label>
+                        <select class="form-select" id="functionSelect" required>
+                            <option value="">Select Function</option>
+                            <!-- Functions will be loaded here -->
+                        </select>
+                    </div>
+                    
+                    <div id="parametersContainer">
+                        <!-- Parameter inputs will be generated dynamically -->
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Select a function to set parameters.
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveLineBtn">Save</button>
             </div>
         </div>
     </div>
@@ -182,106 +391,50 @@
         </div>
     </div>
 </div>
-
-<!-- Function Selector Modal -->
-<div class="modal fade" id="functionSelectorModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Select Function</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="insertTarget" id="insertToCondition" value="condition" checked>
-                        <label class="form-check-label" for="insertToCondition">Insert to Condition</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="insertTarget" id="insertToAction" value="action">
-                        <label class="form-check-label" for="insertToAction">Insert to Action</label>
-                    </div>
-                </div>
-                <input type="hidden" id="selectedFunctionId">
-                <input type="hidden" id="selectedFunctionName">
-                <div class="table-responsive">
-                    <table class="table table-hover border">
-                        <thead class="bg-light">
-                            <tr>
-                                <th>Function Name</th>
-                                <th>Parameters</th>
-                                <th class="text-end">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="functionsList">
-                            <!-- Functions will be loaded here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="selectFunctionBtn">Insert Selected Function</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Field Selector Modal -->
-<div class="modal fade" id="fieldSelectorModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Select Field</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="insertTarget" id="insertFieldToCondition" value="condition" checked>
-                        <label class="form-check-label" for="insertFieldToCondition">Insert to Condition</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="insertTarget" id="insertFieldToAction" value="action">
-                        <label class="form-check-label" for="insertFieldToAction">Insert to Action</label>
-                    </div>
-                </div>
-                <input type="hidden" id="selectedFieldId">
-                <input type="hidden" id="selectedFieldName">
-                <div class="table-responsive">
-                    <table class="table table-hover border">
-                        <thead class="bg-light">
-                            <tr>
-                                <th>Field Name</th>
-                                <th>Type</th>
-                                <th class="text-end">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="fieldsList">
-                            <!-- Fields will be loaded here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="selectFieldBtn">Insert Selected Field</button>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block scripts %}
-<!-- CodeMirror -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.3/codemirror.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.3/codemirror.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.3/mode/javascript/javascript.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.3/addon/edit/matchbrackets.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.3/addon/edit/closebrackets.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.3/addon/hint/show-hint.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.3/addon/hint/javascript-hint.min.js"></script>
+<!-- CodeMirror Library (for code editing) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/javascript-hint.min.js"></script>
 
-<!-- Rules Management JS -->
+<!-- Custom rules management script -->
 <script src="{{ url_for('static', filename='js/rules.js') }}"></script>
+
+<style>
+/* Custom styles for rule badges */
+.rule-type-badge {
+    padding: 0.25em 0.5em;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+.rule-type-standard {
+    background-color: #6c757d;
+    color: white;
+}
+.rule-type-validation {
+    background-color: #17a2b8;
+    color: white;
+}
+.rule-type-calculation {
+    background-color: #28a745;
+    color: white;
+}
+.rule-type-transformation {
+    background-color: #fd7e14;
+    color: white;
+}
+/* CodeMirror custom styling */
+.CodeMirror {
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    height: auto;
+}
+</style>
 {% endblock %}

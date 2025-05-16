@@ -140,7 +140,13 @@ def get_tables():
         
         # If no connection handle or connection not found, return internal tables
         tables = query_db('SELECT * FROM GEE_TABLES')
-        return jsonify([dict(table) for table in tables])
+        
+        # Convert SQLite Row objects to dictionaries for JSON serialization
+        if tables:
+            tables_list = [dict(table) for table in tables]
+            return jsonify(tables_list)
+        else:
+            return jsonify([])
     
     except Exception as e:
         print(f"Error in get_tables: {str(e)}")
@@ -160,18 +166,19 @@ def get_active_connections_for_tables():
         active_conns = query_db('SELECT * FROM GEE_ACTIVE_CONNECTIONS WHERE APP_RUNTIME_ID = ?', 
                                (app_runtime_id,))
         
-        for conn in active_conns:
-            # Get environment name for each connection
-            config = query_db('SELECT ENV_NAME, DB_TYPE FROM GEE_ENV_CONFIG WHERE GT_ID = ?', 
-                            (conn['CONFIG_ID'],), one=True)
-            
-            connections[conn['HANDLE']] = {
-                'config_id': conn['CONFIG_ID'],
-                'created': conn['CREATED'],
-                'status': conn['STATUS'],
-                'env_name': config['ENV_NAME'] if config else 'Unknown',
-                'db_type': config['DB_TYPE'] if config else 'Unknown'
-            }
+        if active_conns:
+            for conn in active_conns:
+                # Get environment name for each connection
+                config = query_db('SELECT ENV_NAME, DB_TYPE FROM GEE_ENV_CONFIG WHERE GT_ID = ?', 
+                                (conn['CONFIG_ID'],), one=True)
+                
+                connections[conn['HANDLE']] = {
+                    'config_id': conn['CONFIG_ID'],
+                    'created': conn['CREATED'],
+                    'status': conn['STATUS'],
+                    'env_name': config['ENV_NAME'] if config else 'Unknown',
+                    'db_type': config['DB_TYPE'] if config else 'Unknown'
+                }
         
         return jsonify(connections)
     except Exception as e:
@@ -354,14 +361,25 @@ def test_query():
                 query = query + ' LIMIT 10;'
 
         results = query_db(query)
-        columns = results[0].keys() if results else []
-
-        return jsonify({
-            'success': True,
-            'message': 'Query executed successfully',
-            'columns': list(columns),
-            'data': [dict(row) for row in results]
-        })
+        
+        if results:
+            # Convert SQLite Row objects to dictionaries for JSON serialization
+            formatted_results = [dict(row) for row in results]
+            columns = list(formatted_results[0].keys()) if formatted_results else []
+            
+            return jsonify({
+                'success': True,
+                'message': 'Query executed successfully',
+                'columns': columns,
+                'data': formatted_results
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'message': 'Query executed successfully but returned no results',
+                'columns': [],
+                'data': []
+            })
     except Exception as e:
         return jsonify({'success': False, 'message': f'Error executing query: {str(e)}'})
 
