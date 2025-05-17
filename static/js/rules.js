@@ -1,483 +1,423 @@
-// Rules Management JavaScript
-
-// Global variables
+// Global variables for storing data
 let allRules = [];
-let allClasses = [];
-let allFields = [];
 let allFunctions = [];
-let currentDeleteId = null;
-let selectedClass = null;
+let allClasses = [];
 let classFields = [];
-
-// Bootstrap modal instances
-let ruleModal;
-let deleteModal;
-let functionSelectorModal;
-let fieldSelectorModal;
-let ruleLineModal;
 let currentRuleLines = { conditions: [], actions: [] };
 let currentEditingLine = null;
+let ruleLineModal = null;
 
+// Initialize the page when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Bootstrap modals
-    ruleModal = new bootstrap.Modal(document.getElementById('ruleModal'));
-    deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-    functionSelectorModal = new bootstrap.Modal(document.getElementById('functionSelectorModal'));
-    fieldSelectorModal = new bootstrap.Modal(document.getElementById('fieldSelectorModal'));
-    ruleLineModal = new bootstrap.Modal(document.getElementById('ruleLineModal'));
+    const ruleModal = document.getElementById('ruleModal');
+    if (ruleModal) {
+        new bootstrap.Modal(ruleModal);
+    }
     
-    // Setup event listeners
-    document.getElementById('saveRuleBtn').addEventListener('click', saveRule);
-    document.getElementById('confirmDeleteBtn').addEventListener('click', confirmDelete);
-    document.getElementById('insertFunctionBtn').addEventListener('click', () => openFunctionSelector('condition'));
-    document.getElementById('insertFieldBtn').addEventListener('click', () => openFieldSelector('condition'));
-    document.getElementById('selectFunctionBtn').addEventListener('click', insertSelectedFunction);
-    document.getElementById('selectFieldBtn').addEventListener('click', insertSelectedField);
-    document.getElementById('testConditionBtn').addEventListener('click', testCondition);
-    document.getElementById('testActionBtn').addEventListener('click', testAction);
-    document.getElementById('saveLineBtn').addEventListener('click', saveRuleLine);
+    const ruleLineModalElement = document.getElementById('ruleLineModal');
+    if (ruleLineModalElement) {
+        ruleLineModal = new bootstrap.Modal(ruleLineModalElement);
+    }
     
-    // Add class change listener
-    document.getElementById('ruleClass').addEventListener('change', handleClassChange);
+    const functionSelectorModal = document.getElementById('functionSelectorModal');
+    if (functionSelectorModal) {
+        new bootstrap.Modal(functionSelectorModal);
+    }
     
-    // Add event listeners for rule creation mode toggle
-    document.querySelectorAll('input[name="ruleCreationMode"]').forEach(input => {
-        input.addEventListener('change', toggleRuleCreationMode);
+    const fieldSelectorModal = document.getElementById('fieldSelectorModal');
+    if (fieldSelectorModal) {
+        new bootstrap.Modal(fieldSelectorModal);
+    }
+    
+    const deleteModal = document.getElementById('deleteModal');
+    if (deleteModal) {
+        new bootstrap.Modal(deleteModal);
+    }
+    
+    // Initialize CodeMirror editors if elements exist
+    if (document.getElementById('conditionCode')) {
+        window.conditionEditor = CodeMirror.fromTextArea(document.getElementById('conditionCode'), {
+            mode: 'javascript',
+            lineNumbers: true,
+            matchBrackets: true,
+            autoCloseBrackets: true,
+            extraKeys: {"Ctrl-Space": "autocomplete"},
+            theme: 'default'
+        });
+    }
+    
+    if (document.getElementById('actionCode')) {
+        window.actionEditor = CodeMirror.fromTextArea(document.getElementById('actionCode'), {
+            mode: 'javascript',
+            lineNumbers: true,
+            matchBrackets: true,
+            autoCloseBrackets: true,
+            extraKeys: {"Ctrl-Space": "autocomplete"},
+            theme: 'default'
+        });
+    }
+    
+    // Handle rule creation mode toggle
+    const ruleCreationModeRadios = document.querySelectorAll('input[name="ruleCreationMode"]');
+    ruleCreationModeRadios.forEach(radio => {
+        radio.addEventListener('change', toggleRuleCreationMode);
     });
     
-    // Add event listener for function selection in rule line modal
-    document.getElementById('functionSelect').addEventListener('change', handleFunctionSelection);
+    // Set up event listeners for buttons
+    const saveRuleBtn = document.getElementById('saveRuleBtn');
+    if (saveRuleBtn) {
+        saveRuleBtn.addEventListener('click', saveRule);
+    }
     
-    // Load data
+    const saveLineBtn = document.getElementById('saveLineBtn');
+    if (saveLineBtn) {
+        saveLineBtn.addEventListener('click', saveRuleLine);
+    }
+    
+    const selectFunctionBtn = document.getElementById('selectFunctionBtn');
+    if (selectFunctionBtn) {
+        selectFunctionBtn.addEventListener('click', insertSelectedFunction);
+    }
+    
+    const selectFieldBtn = document.getElementById('selectFieldBtn');
+    if (selectFieldBtn) {
+        selectFieldBtn.addEventListener('click', insertSelectedField);
+    }
+    
+    // Set up event listeners for code editor buttons
+    const insertConditionFunctionBtn = document.getElementById('insertConditionFunctionBtn');
+    if (insertConditionFunctionBtn) {
+        insertConditionFunctionBtn.addEventListener('click', () => openFunctionSelector('condition'));
+    }
+    
+    const insertConditionFieldBtn = document.getElementById('insertConditionFieldBtn');
+    if (insertConditionFieldBtn) {
+        insertConditionFieldBtn.addEventListener('click', () => openFieldSelector('condition'));
+    }
+    
+    const insertActionFunctionBtn = document.getElementById('insertActionFunctionBtn');
+    if (insertActionFunctionBtn) {
+        insertActionFunctionBtn.addEventListener('click', () => openFunctionSelector('action'));
+    }
+    
+    const insertActionFieldBtn = document.getElementById('insertActionFieldBtn');
+    if (insertActionFieldBtn) {
+        insertActionFieldBtn.addEventListener('click', () => openFieldSelector('action'));
+    }
+    
+    const testConditionBtn = document.getElementById('testConditionBtn');
+    if (testConditionBtn) {
+        testConditionBtn.addEventListener('click', () => testCode('condition'));
+    }
+    
+    const testActionBtn = document.getElementById('testActionBtn');
+    if (testActionBtn) {
+        testActionBtn.addEventListener('click', () => testCode('action'));
+    }
+    
+    // Function select change handler
+    const functionSelect = document.getElementById('functionSelect');
+    if (functionSelect) {
+        functionSelect.addEventListener('change', () => handleFunctionSelection());
+    }
+    
+    // Load initial data
     loadRules();
     loadClasses();
-    loadFields();
     loadFunctions();
-    
-    // Initialize code editors
-    initializeCodeEditors();
 });
 
-// Load rules
+// Load all rules
 function loadRules() {
     fetch('/rules/get_rules')
         .then(response => response.json())
         .then(data => {
             allRules = data;
             renderRules(data);
-            
-            // Update rule count
-            document.getElementById('ruleCount').textContent = `${data.length} rules`;
         })
         .catch(error => {
-            showToast('Error', 'Failed to load rules', 'error');
             console.error('Error loading rules:', error);
+            showToast('Error', 'Failed to load rules', 'error');
         });
 }
 
-// Load classes for dropdown
+// Load all field classes
 function loadClasses() {
-    fetch('/class/get_classes')
+    fetch('/classes/get_classes')
         .then(response => response.json())
         .then(data => {
             allClasses = data;
-            populateClassDropdown(data);
-            populateClassFilter(data);
+            
+            // Populate class dropdowns
+            populateClassDropdowns(data);
         })
         .catch(error => {
-            showToast('Error', 'Failed to load classes', 'error');
             console.error('Error loading classes:', error);
+            showToast('Error', 'Failed to load field classes', 'error');
         });
 }
 
-// Load fields
-function loadFields() {
-    fetch('/fields/get_fields')
-        .then(response => response.json())
-        .then(data => {
-            allFields = data;
-            // We'll populate the field selector when a class is selected
-        })
-        .catch(error => {
-            showToast('Error', 'Failed to load fields', 'error');
-            console.error('Error loading fields:', error);
-        });
-}
-
-// Load functions
-function loadFunctions() {
-    fetch('/function/get_functions')
-        .then(response => response.json())
-        .then(data => {
-            if (Array.isArray(data)) {
-                allFunctions = data;
-                populateFunctionSelector(data);
-                populateFunctionDropdown(data);
-            } else {
-                console.error('Function data is not an array:', data);
-                showToast('Error', 'Function data has unexpected format', 'error');
-            }
-        })
-        .catch(error => {
-            showToast('Error', 'Failed to load functions', 'error');
-            console.error('Error loading functions:', error);
-        });
-}
-
-// Populate the class dropdown
-function populateClassDropdown(classes) {
-    const dropdown = document.getElementById('ruleClass');
-    dropdown.innerHTML = '<option value="">Select Class</option>';
-    
-    classes.forEach(cls => {
-        dropdown.innerHTML += `<option value="${cls.GFC_ID}">${cls.FIELD_CLASS_NAME}</option>`;
-    });
-}
-
-// Populate the class filter dropdown
-function populateClassFilter(classes) {
-    const filterDropdown = document.getElementById('filterClass');
-    if (filterDropdown) {
-        filterDropdown.innerHTML = '<option value="">All Classes</option>';
-        
-        classes.forEach(cls => {
-            filterDropdown.innerHTML += `<option value="${cls.GFC_ID}">${cls.FIELD_CLASS_NAME}</option>`;
-        });
-    }
-}
-
-// Populate the function dropdown
-function populateFunctionDropdown(functions) {
-    const dropdown = document.getElementById('functionSelect');
-    dropdown.innerHTML = '<option value="">Select Function</option>';
-    
-    functions.forEach(func => {
-        const funcId = func.GBF_ID || func.FUNC_ID || 0;
-        const funcName = func.FUNC_NAME || func.name || 'Unknown Function';
-        dropdown.innerHTML += `<option value="${funcId}">${funcName}</option>`;
-    });
-}
-
-// Handle class change event
-function handleClassChange() {
-    const classId = document.getElementById('ruleClass').value;
-    selectedClass = classId ? parseInt(classId) : null;
-    
-    // Update the available fields based on the selected class
-    if (selectedClass) {
-        // Filter fields for this class
-        classFields = allFields.filter(field => field.GFC_ID === selectedClass);
-    } else {
-        classFields = [];
-    }
-    
-    // Update the field selector if it's open
-    populateFieldSelector(classFields);
-    
-    // Update the field button's state
-    const insertFieldBtn = document.getElementById('insertFieldBtn');
-    if (insertFieldBtn) {
-        if (classFields.length === 0) {
-            insertFieldBtn.disabled = true;
-            insertFieldBtn.title = "Select a class first to enable field selection";
-        } else {
-            insertFieldBtn.disabled = false;
-            insertFieldBtn.title = "";
+// Populate class dropdowns
+function populateClassDropdowns(classes) {
+    // Populate class filter dropdown
+    const filterClassDropdown = document.getElementById('filterClass');
+    if (filterClassDropdown) {
+        // Clear existing options except the first one
+        while (filterClassDropdown.options.length > 1) {
+            filterClassDropdown.remove(1);
         }
-    }
-}
-
-// Populate field selector based on selected class
-function populateFieldSelector(fields) {
-    const fieldList = document.getElementById('fieldsList');
-    if (!fieldList) return;
-    
-    fieldList.innerHTML = '';
-    
-    if (fields.length === 0) {
-        fieldList.innerHTML = `
-            <tr>
-                <td colspan="3" class="text-center text-muted py-3">
-                    <i class="fas fa-info-circle me-2"></i>
-                    ${selectedClass ? 'No fields available for this class.' : 'Please select a class first.'}
-                </td>
-            </tr>
-        `;
-        return;
-    }
-    
-    fields.forEach(field => {
-        fieldList.innerHTML += `
-            <tr data-field-id="${field.GF_ID}" data-field-name="${field.GF_NAME}" class="field-row">
-                <td>${field.GF_NAME}</td>
-                <td>${field.GF_TYPE}</td>
-                <td class="text-end">
-                    <button class="btn btn-sm btn-primary" onclick="selectField(${field.GF_ID})">Select</button>
-                </td>
-            </tr>
-        `;
-    });
-}
-
-// Populate function selector
-function populateFunctionSelector(functions) {
-    const functionList = document.getElementById('functionsList');
-    if (!functionList) return;
-    
-    functionList.innerHTML = '';
-    
-    if (!Array.isArray(functions) || functions.length === 0) {
-        functionList.innerHTML = `
-            <tr>
-                <td colspan="3" class="text-center text-muted py-3">
-                    <i class="fas fa-info-circle me-2"></i>
-                    No functions available. Please create functions first.
-                </td>
-            </tr>
-        `;
-        return;
-    }
-    
-    functions.forEach(func => {
-        // Make sure we have required properties and provide fallbacks
-        const funcId = func.GBF_ID || func.FUNC_ID || 0;
-        const funcName = func.FUNC_NAME || func.name || 'Unknown Function';
-        const paramCount = func.PARAM_COUNT || 0;
         
-        functionList.innerHTML += `
-            <tr data-function-id="${funcId}" data-function-name="${funcName}" class="function-row">
-                <td>${funcName}</td>
-                <td>${paramCount} params</td>
+        // Add option for "All Classes"
+        const allClassOption = document.createElement('option');
+        allClassOption.value = "";
+        allClassOption.textContent = "All Classes";
+        filterClassDropdown.appendChild(allClassOption);
+        
+        // Add options for each class
+        classes.forEach(cls => {
+            const option = document.createElement('option');
+            option.value = cls.GFC_ID;
+            option.textContent = cls.GFC_NAME;
+            filterClassDropdown.appendChild(option);
+        });
+    }
+    
+    // Populate rule class dropdown
+    const ruleClassDropdown = document.getElementById('ruleClass');
+    if (ruleClassDropdown) {
+        // Clear existing options except the first one
+        while (ruleClassDropdown.options.length > 1) {
+            ruleClassDropdown.remove(1);
+        }
+        
+        // Add options for each class
+        classes.forEach(cls => {
+            const option = document.createElement('option');
+            option.value = cls.GFC_ID;
+            option.textContent = cls.GFC_NAME;
+            ruleClassDropdown.appendChild(option);
+        });
+    }
+}
+
+// Load fields for a specific class
+function loadFieldsForClass(classId) {
+    if (!classId) {
+        classFields = [];
+        return Promise.resolve([]);
+    }
+    
+    return fetch(`/fields/get_fields_by_class/${classId}`)
+        .then(response => response.json())
+        .then(data => {
+            classFields = data;
+            return data;
+        })
+        .catch(error => {
+            console.error('Error loading fields:', error);
+            showToast('Error', 'Failed to load fields for the selected class', 'error');
+            return [];
+        });
+}
+
+// Load all functions
+function loadFunctions() {
+    fetch('/functions/get_functions')
+        .then(response => response.json())
+        .then(data => {
+            allFunctions = data;
+            
+            // Populate function dropdowns
+            populateFunctionDropdowns(data);
+        })
+        .catch(error => {
+            console.error('Error loading functions:', error);
+            showToast('Error', 'Failed to load functions', 'error');
+        });
+}
+
+// Populate function dropdowns
+function populateFunctionDropdowns(functions) {
+    const functionSelect = document.getElementById('functionSelect');
+    if (functionSelect) {
+        // Clear existing options except the first one
+        while (functionSelect.options.length > 1) {
+            functionSelect.remove(1);
+        }
+        
+        // Add options for each function
+        functions.forEach(func => {
+            const option = document.createElement('option');
+            option.value = func.GBF_ID;
+            option.textContent = func.FUNC_NAME;
+            functionSelect.appendChild(option);
+        });
+    }
+    
+    // Populate functions list in function selector modal
+    const functionsList = document.getElementById('functionsList');
+    if (functionsList) {
+        functionsList.innerHTML = '';
+        
+        functions.forEach(func => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${func.FUNC_NAME}</td>
+                <td>${func.PARAM_COUNT} params</td>
                 <td class="text-end">
-                    <button class="btn btn-sm btn-primary" onclick="selectFunction(${funcId})">Select</button>
+                    <button class="btn btn-sm btn-primary" onclick="selectFunction('${func.GBF_ID}', '${func.FUNC_NAME}')">
+                        <i class="fas fa-check me-1"></i>Select
+                    </button>
                 </td>
-            </tr>
-        `;
-    });
+            `;
+            functionsList.appendChild(row);
+        });
+    }
 }
 
 // Render rules to the table
 function renderRules(rules) {
-    const tableBody = document.getElementById('ruleList');
+    const ruleList = document.getElementById('ruleList');
     const noRulesMessage = document.getElementById('noRulesMessage');
     
-    if (!tableBody || !noRulesMessage) return;
+    if (!ruleList) return;
     
-    tableBody.innerHTML = '';
+    // Clear the current content
+    ruleList.innerHTML = '';
     
-    if (rules.length === 0) {
-        noRulesMessage.classList.remove('d-none');
+    if (!rules || rules.length === 0) {
+        if (noRulesMessage) {
+            noRulesMessage.style.display = 'block';
+        }
         return;
     }
     
-    noRulesMessage.classList.add('d-none');
+    // Hide the no rules message
+    if (noRulesMessage) {
+        noRulesMessage.style.display = 'none';
+    }
     
+    // Render each rule
     rules.forEach(rule => {
-        const ruleType = rule.RULE_TYPE || 'Standard';
-        // Find class name from the class ID
-        const className = allClasses.find(c => c.GFC_ID === rule.GFC_ID)?.FIELD_CLASS_NAME || 'None';
-        const updateDate = formatDate(rule.UPDATE_DATE || rule.CREATE_DATE);
+        const row = document.createElement('tr');
         
-        // Build the row
-        const row = `
-            <tr data-id="${rule.RULE_ID}">
-                <td class="fw-medium">${rule.RULE_NAME}</td>
-                <td>${className}</td>
-                <td><span class="rule-type-badge rule-type-${ruleType.toLowerCase()}">${ruleType}</span></td>
-                <td>${rule.DESCRIPTION || '<span class="text-muted">No description</span>'}</td>
-                <td>${updateDate || '-'}</td>
-                <td class="text-end">
-                    <button class="btn btn-warning btn-sm me-1" onclick="editRule(${rule.RULE_ID})">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteRule(${rule.RULE_ID})">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            </tr>
+        // Find class name if class ID exists
+        let className = 'None';
+        if (rule.GFC_ID && allClasses.length > 0) {
+            const cls = allClasses.find(c => c.GFC_ID == rule.GFC_ID);
+            if (cls) {
+                className = cls.GFC_NAME;
+            }
+        }
+        
+        // Format date
+        const updatedDate = new Date(rule.UPDATE_DATE).toLocaleString();
+        
+        row.innerHTML = `
+            <td>${rule.RULE_NAME}</td>
+            <td>${className}</td>
+            <td><span class="badge rule-type-${rule.RULE_TYPE?.toLowerCase()}">${rule.RULE_TYPE || 'Standard'}</span></td>
+            <td>${rule.DESCRIPTION || ''}</td>
+            <td>${updatedDate}</td>
+            <td class="text-end">
+                <button class="btn btn-sm btn-warning me-1" onclick="editRule(${rule.RULE_ID})">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="confirmDeleteRule(${rule.RULE_ID})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
         `;
         
-        tableBody.innerHTML += row;
+        ruleList.appendChild(row);
     });
-}
-
-// Format date
-function formatDate(dateString) {
-    if (!dateString) return '';
     
-    try {
-        const date = new Date(dateString);
-        return date.toLocaleString();
-    } catch (e) {
-        return dateString;
+    // Update rule count
+    const ruleCount = document.getElementById('ruleCount');
+    if (ruleCount) {
+        ruleCount.textContent = `${rules.length} rules`;
     }
 }
 
-// Initialize code editors
-function initializeCodeEditors() {
-    if (typeof CodeMirror === 'undefined') {
-        console.warn('CodeMirror is not available. Code editors will not be initialized.');
-        return;
-    }
-
-    const conditionCodeElement = document.getElementById('conditionCode');
-    const actionCodeElement = document.getElementById('actionCode');
-
-    if (conditionCodeElement && actionCodeElement) {
-        // Initialize condition editor
-        window.conditionEditor = CodeMirror.fromTextArea(conditionCodeElement, {
-            mode: 'javascript',
-            theme: 'default',
-            lineNumbers: true,
-            autoCloseBrackets: true,
-            matchBrackets: true,
-            indentUnit: 4,
-            tabSize: 4,
-            lineWrapping: true,
-            extraKeys: {
-                "Ctrl-Space": "autocomplete"
-            }
-        });
-        
-        // Initialize action editor
-        window.actionEditor = CodeMirror.fromTextArea(actionCodeElement, {
-            mode: 'javascript',
-            theme: 'default',
-            lineNumbers: true,
-            autoCloseBrackets: true,
-            matchBrackets: true,
-            indentUnit: 4,
-            tabSize: 4,
-            lineWrapping: true,
-            extraKeys: {
-                "Ctrl-Space": "autocomplete"
-            }
-        });
-        
-        // Set custom height
-        window.conditionEditor.setSize(null, 150);
-        window.actionEditor.setSize(null, 150);
-    }
-}
-
-// Open the rule modal for creating a new rule
+// Open new rule modal
 function openNewRuleModal() {
-    document.getElementById('modalTitle').textContent = 'Add New Rule';
+    // Reset the form
     document.getElementById('ruleForm').reset();
     document.getElementById('ruleId').value = '';
     
-    // Reset CodeMirror editors if they exist
-    if (window.conditionEditor && window.actionEditor) {
-        window.conditionEditor.setValue('');
-        window.actionEditor.setValue('');
-    }
-    
-    // Reset test results
-    const conditionResults = document.getElementById('conditionResults');
-    const actionResults = document.getElementById('actionResults');
-    if (conditionResults) conditionResults.classList.add('d-none');
-    if (actionResults) actionResults.classList.add('d-none');
-    
-    // Reset selected class
-    selectedClass = null;
-    classFields = [];
-    
-    // Disable field button initially
-    const insertFieldBtn = document.getElementById('insertFieldBtn');
-    if (insertFieldBtn) insertFieldBtn.disabled = true;
+    // Set default values
+    document.getElementById('modalTitle').textContent = 'Add New Rule';
+    document.getElementById('ruleType').value = 'Standard';
     
     // Reset rule lines
     currentRuleLines = { conditions: [], actions: [] };
     
-    // Reset rule creation mode
+    // Reset CodeMirror editors if they exist
+    if (window.conditionEditor) {
+        window.conditionEditor.setValue('');
+    }
+    if (window.actionEditor) {
+        window.actionEditor.setValue('');
+    }
+    
+    // Default to code editor mode
     document.getElementById('modeCodeEditor').checked = true;
     document.getElementById('codeEditorMode').classList.remove('d-none');
     document.getElementById('structuredMode').classList.add('d-none');
     
-    ruleModal.show();
+    // Show the modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('ruleModal'));
+    modal.show();
 }
 
-// Edit rule
+// Edit an existing rule
 function editRule(ruleId) {
-    // Find rule in the allRules array
+    // Find the rule
     const rule = allRules.find(r => r.RULE_ID === ruleId);
     
-    if (rule) {
-        document.getElementById('modalTitle').textContent = 'Edit Rule';
-        document.getElementById('ruleId').value = rule.RULE_ID;
-        document.getElementById('ruleName').value = rule.RULE_NAME;
-        document.getElementById('ruleClass').value = rule.GFC_ID || '';
-        document.getElementById('ruleType').value = rule.RULE_TYPE || 'Standard';
-        document.getElementById('ruleDescription').value = rule.DESCRIPTION || '';
-        
-        // Set selected class
-        selectedClass = rule.GFC_ID ? parseInt(rule.GFC_ID) : null;
-        
-        // Update fields for this class
-        if (selectedClass) {
-            classFields = allFields.filter(field => field.GFC_ID === selectedClass);
-            const insertFieldBtn = document.getElementById('insertFieldBtn');
-            if (insertFieldBtn) insertFieldBtn.disabled = false;
-        } else {
-            classFields = [];
-            const insertFieldBtn = document.getElementById('insertFieldBtn');
-            if (insertFieldBtn) insertFieldBtn.disabled = true;
-        }
-        
-        // Load the condition and action code
-        if (window.conditionEditor && window.actionEditor) {
-            window.conditionEditor.setValue(rule.CONDITION_CODE || '');
-            window.actionEditor.setValue(rule.ACTION_CODE || '');
-        }
-        
-        // Reset test results
-        const conditionResults = document.getElementById('conditionResults');
-        const actionResults = document.getElementById('actionResults');
-        if (conditionResults) conditionResults.classList.add('d-none');
-        if (actionResults) actionResults.classList.add('d-none');
-        
-        // Reset rule creation mode
-        document.getElementById('modeCodeEditor').checked = true;
-        document.getElementById('codeEditorMode').classList.remove('d-none');
-        document.getElementById('structuredMode').classList.add('d-none');
-        
-        // Load rule lines if this is an existing rule
-        currentRuleLines = { conditions: [], actions: [] };
-        loadRuleLines(rule.RULE_ID);
-        
-        ruleModal.show();
-    } else {
+    if (!rule) {
         showToast('Error', 'Rule not found', 'error');
+        return;
     }
-}
-
-// Delete rule
-function deleteRule(ruleId) {
-    currentDeleteId = ruleId;
-    deleteModal.show();
-}
-
-// Confirm delete
-function confirmDelete() {
-    if (!currentDeleteId) return;
     
-    fetch(`/rules/delete_rule/${currentDeleteId}`, {
-        method: 'DELETE'
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            deleteModal.hide();
-            loadRules();
-            showToast('Success', data.message);
-        } else {
-            showToast('Error', data.message, 'error');
-        }
-    })
-    .catch(error => {
-        showToast('Error', 'An error occurred while deleting the rule', 'error');
-        console.error('Error:', error);
-    });
+    // Reset the form
+    document.getElementById('ruleForm').reset();
+    
+    // Set values
+    document.getElementById('ruleId').value = rule.RULE_ID;
+    document.getElementById('ruleName').value = rule.RULE_NAME || '';
+    document.getElementById('ruleClass').value = rule.GFC_ID || '';
+    document.getElementById('ruleType').value = rule.RULE_TYPE || 'Standard';
+    document.getElementById('ruleDescription').value = rule.DESCRIPTION || '';
+    
+    // Load class fields if class is selected
+    if (rule.GFC_ID) {
+        loadFieldsForClass(rule.GFC_ID);
+    }
+    
+    // Set CodeMirror editors if they exist
+    if (window.conditionEditor) {
+        window.conditionEditor.setValue(rule.CONDITION_CODE || '');
+    }
+    if (window.actionEditor) {
+        window.actionEditor.setValue(rule.ACTION_CODE || '');
+    }
+    
+    // Set modal title
+    document.getElementById('modalTitle').textContent = 'Edit Rule';
+    
+    // Default to code editor mode
+    document.getElementById('modeCodeEditor').checked = true;
+    document.getElementById('codeEditorMode').classList.remove('d-none');
+    document.getElementById('structuredMode').classList.add('d-none');
+    
+    // Load rule lines
+    loadRuleLines(rule.RULE_ID);
+    
+    // Show the modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('ruleModal'));
+    modal.show();
 }
 
 // Save rule
@@ -488,36 +428,34 @@ function saveRule() {
     const ruleType = document.getElementById('ruleType').value;
     const description = document.getElementById('ruleDescription').value;
     
-    // Check which mode we're in
-    const mode = document.querySelector('input[name="ruleCreationMode"]:checked').value;
-    
-    // Get the code from the appropriate source
-    let conditionCode = '';
-    let actionCode = '';
-    
-    if (mode === 'codeEditor') {
-        conditionCode = window.conditionEditor ? window.conditionEditor.getValue() : '';
-        actionCode = window.actionEditor ? window.actionEditor.getValue() : '';
-    } else {
-        // For structured mode, generate code from the rule lines
-        generateCodeFromLines();
-        conditionCode = window.conditionEditor ? window.conditionEditor.getValue() : '';
-        actionCode = window.actionEditor ? window.actionEditor.getValue() : '';
-    }
-    
     // Validate required fields
     if (!ruleName) {
-        showToast('Error', 'Rule Name is required', 'error');
+        showToast('Error', 'Rule name is required', 'error');
         return;
     }
     
     if (!classId) {
-        showToast('Error', 'Class selection is required', 'error');
+        showToast('Error', 'Please select a class', 'error');
         return;
     }
     
+    // Get condition and action code based on mode
+    let conditionCode = '';
+    let actionCode = '';
+    
+    if (document.getElementById('modeCodeEditor').checked) {
+        // Code editor mode
+        conditionCode = window.conditionEditor.getValue();
+        actionCode = window.actionEditor.getValue();
+    } else {
+        // Structured mode - generate code from lines
+        generateCodeFromLines();
+        conditionCode = window.conditionEditor.getValue();
+        actionCode = window.actionEditor.getValue();
+    }
+    
+    // Prepare data
     const data = {
-        ruleId: ruleId,
         ruleName: ruleName,
         classId: classId,
         ruleType: ruleType,
@@ -526,9 +464,17 @@ function saveRule() {
         actionCode: actionCode
     };
     
-    const method = ruleId ? 'PUT' : 'POST';
-    const url = ruleId ? '/rules/update_rule' : '/rules/add_rule';
-
+    let url = '/rules/add_rule';
+    let method = 'POST';
+    
+    if (ruleId) {
+        // Update existing rule
+        url = '/rules/update_rule';
+        method = 'PUT';
+        data.ruleId = ruleId;
+    }
+    
+    // Send request
     fetch(url, {
         method: method,
         headers: {
@@ -539,112 +485,194 @@ function saveRule() {
     .then(response => response.json())
     .then(result => {
         if (result.success) {
-            // If we just created a new rule and have rule lines, save them
-            if (!ruleId && result.id && (
-                currentRuleLines.conditions.length > 0 || 
-                currentRuleLines.actions.length > 0
-            )) {
-                saveRuleLinesToServer(result.id)
-                    .then(() => {
-                        ruleModal.hide();
-                        loadRules();
-                        showToast('Success', result.message);
-                    });
-            } else {
-                ruleModal.hide();
-                loadRules();
-                showToast('Success', result.message);
+            // If new rule was created, now save rule lines
+            if (!ruleId && result.id) {
+                if (currentRuleLines.conditions.length > 0 || currentRuleLines.actions.length > 0) {
+                    return saveRuleLinesToServer(result.id).then(() => result);
+                }
             }
+            return result;
         } else {
-            showToast('Error', result.message, 'error');
+            throw new Error(result.message || 'Unknown error');
         }
     })
+    .then(result => {
+        showToast('Success', result.message);
+        
+        // Hide the modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('ruleModal'));
+        modal.hide();
+        
+        // Reload rules
+        loadRules();
+    })
     .catch(error => {
-        showToast('Error', 'An error occurred while saving the rule', 'error');
-        console.error('Error:', error);
+        showToast('Error', error.message, 'error');
+        console.error('Error saving rule:', error);
     });
 }
 
-// Open function selector
+// Confirm delete rule
+function confirmDeleteRule(ruleId) {
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.onclick = function() {
+            deleteRule(ruleId);
+        };
+    }
+    
+    // Show the modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+    modal.show();
+}
+
+// Delete rule
+function deleteRule(ruleId) {
+    fetch(`/rules/delete_rule/${ruleId}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showToast('Success', result.message);
+            
+            // Hide the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+            modal.hide();
+            
+            // Reload rules
+            loadRules();
+        } else {
+            throw new Error(result.message || 'Unknown error');
+        }
+    })
+    .catch(error => {
+        showToast('Error', error.message, 'error');
+        console.error('Error deleting rule:', error);
+    });
+}
+
+// Function Selector
 function openFunctionSelector(target) {
-    if (allFunctions.length === 0) {
-        showToast('Warning', 'No functions available. Please create functions first.', 'warning');
-        return;
+    // Set the selected target (condition or action)
+    if (target === 'condition') {
+        document.getElementById('insertTargetCondition').checked = true;
+    } else {
+        document.getElementById('insertTargetAction').checked = true;
     }
     
-    // Set the target for inserting the function (condition or action)
-    document.querySelector('input[name="insertTarget"][value="' + target + '"]').checked = true;
-    
-    functionSelectorModal.show();
+    // Show the modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('functionSelectorModal'));
+    modal.show();
 }
 
-// Open field selector
-function openFieldSelector(target) {
-    if (!selectedClass) {
-        showToast('Warning', 'Please select a class first', 'warning');
-        return;
-    }
+// Select function from function selector
+function selectFunction(functionId, functionName) {
+    document.getElementById('selectedFunctionId').value = functionId;
+    document.getElementById('selectedFunctionName').value = functionName;
     
-    if (classFields.length === 0) {
-        showToast('Warning', 'No fields available for this class', 'warning');
-        return;
-    }
-    
-    // Set the target for inserting the field (condition or action)
-    document.querySelector('input[name="insertTarget"][value="' + target + '"]').checked = true;
-    
-    populateFieldSelector(classFields);
-    fieldSelectorModal.show();
-}
-
-// Select a function from the list
-function selectFunction(functionId) {
-    const func = allFunctions.find(f => f.GBF_ID === functionId || f.FUNC_ID === functionId);
-    if (func) {
-        document.getElementById('selectedFunctionId').value = functionId;
-        document.getElementById('selectedFunctionName').value = func.FUNC_NAME || func.name;
-    }
-}
-
-// Select a field from the list
-function selectField(fieldId) {
-    const field = classFields.find(f => f.GF_ID === fieldId);
-    if (field) {
-        document.getElementById('selectedFieldId').value = fieldId;
-        document.getElementById('selectedFieldName').value = field.GF_NAME;
-    }
+    // Enable the select button
+    document.getElementById('selectFunctionBtn').disabled = false;
 }
 
 // Insert selected function
 function insertSelectedFunction() {
+    const functionId = document.getElementById('selectedFunctionId').value;
     const functionName = document.getElementById('selectedFunctionName').value;
     
-    if (!functionName) {
-        showToast('Warning', 'Please select a function', 'warning');
+    if (!functionId || !functionName) {
+        showToast('Error', 'Please select a function', 'error');
         return;
     }
     
-    // Get selected insert target (condition or action)
-    const insertTarget = document.querySelector('input[name="insertTarget"]:checked').value;
+    // Determine target editor
+    const isCondition = document.getElementById('insertTargetCondition').checked;
+    const editor = isCondition ? window.conditionEditor : window.actionEditor;
     
-    // Create function template with parameter placeholders
-    const func = allFunctions.find(f => f.FUNC_NAME === functionName || f.name === functionName);
-    const paramCount = func ? (func.PARAM_COUNT || 0) : 0;
-    
-    let functionTemplate = `${functionName}(`;
-    for (let i = 0; i < paramCount; i++) {
-        functionTemplate += i > 0 ? `, param${i+1}` : `param${i+1}`;
-    }
-    functionTemplate += ');';
-    
-    // Insert into the selected editor
-    if (insertTarget === 'condition' && window.conditionEditor) {
-        insertAtCursor(window.conditionEditor, functionTemplate);
-    } else if (window.actionEditor) {
-        insertAtCursor(window.actionEditor, functionTemplate);
+    if (!editor) {
+        showToast('Error', 'Editor not found', 'error');
+        return;
     }
     
-    functionSelectorModal.hide();
+    // Find the function
+    const func = allFunctions.find(f => f.GBF_ID == functionId);
+    
+    if (!func) {
+        showToast('Error', 'Function not found', 'error');
+        return;
+    }
+    
+    // Generate function call template
+    let params = [];
+    for (let i = 0; i < func.PARAM_COUNT; i++) {
+        params.push(`param${i+1}`);
+    }
+    
+    const functionCall = `${functionName}(${params.join(', ')});\n`;
+    
+    // Insert at cursor position or at the end
+    const cursor = editor.getCursor();
+    editor.replaceRange(functionCall, cursor);
+    
+    // Hide the modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('functionSelectorModal'));
+    modal.hide();
+}
+
+// Field Selector
+function openFieldSelector(target) {
+    // Set the selected target (condition or action)
+    if (target === 'condition') {
+        document.getElementById('insertTargetCondition2').checked = true;
+    } else {
+        document.getElementById('insertTargetAction2').checked = true;
+    }
+    
+    // Populate fields list
+    const fieldsList = document.getElementById('fieldsList');
+    if (fieldsList) {
+        fieldsList.innerHTML = '';
+        
+        if (classFields.length === 0) {
+            // No class selected or no fields available
+            fieldsList.innerHTML = `
+                <tr>
+                    <td colspan="3" class="text-center text-muted py-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        No fields available. Please select a class for the rule.
+                    </td>
+                </tr>
+            `;
+        } else {
+            classFields.forEach(field => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${field.GF_NAME}</td>
+                    <td>${field.GF_TYPE}</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-primary" onclick="selectField('${field.GF_ID}', '${field.GF_NAME}')">
+                            <i class="fas fa-check me-1"></i>Select
+                        </button>
+                    </td>
+                `;
+                fieldsList.appendChild(row);
+            });
+        }
+    }
+    
+    // Show the modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('fieldSelectorModal'));
+    modal.show();
+}
+
+// Select field from field selector
+function selectField(fieldId, fieldName) {
+    document.getElementById('selectedFieldId').value = fieldId;
+    document.getElementById('selectedFieldName').value = fieldName;
+    
+    // Enable the select button
+    document.getElementById('selectFieldBtn').disabled = false;
 }
 
 // Insert selected field
@@ -652,45 +680,47 @@ function insertSelectedField() {
     const fieldName = document.getElementById('selectedFieldName').value;
     
     if (!fieldName) {
-        showToast('Warning', 'Please select a field', 'warning');
+        showToast('Error', 'Please select a field', 'error');
         return;
     }
     
-    // Get selected insert target (condition or action)
-    const insertTarget = document.querySelector('input[name="insertTarget"]:checked').value;
+    // Determine target editor
+    const isCondition = document.getElementById('insertTargetCondition2').checked;
+    const editor = isCondition ? window.conditionEditor : window.actionEditor;
     
-    // Create field reference template
-    const fieldTemplate = `fields.${fieldName}`;
-    
-    // Insert into the selected editor
-    if (insertTarget === 'condition' && window.conditionEditor) {
-        insertAtCursor(window.conditionEditor, fieldTemplate);
-    } else if (window.actionEditor) {
-        insertAtCursor(window.actionEditor, fieldTemplate);
+    if (!editor) {
+        showToast('Error', 'Editor not found', 'error');
+        return;
     }
     
-    fieldSelectorModal.hide();
-}
-
-// Insert text at cursor position in CodeMirror editor
-function insertAtCursor(editor, text) {
+    // Generate field reference
+    const fieldReference = `fields.${fieldName}`;
+    
+    // Insert at cursor position
     const cursor = editor.getCursor();
-    editor.replaceRange(text, cursor);
-    editor.focus();
+    editor.replaceRange(fieldReference, cursor);
+    
+    // Hide the modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('fieldSelectorModal'));
+    modal.hide();
 }
 
-// Test condition code
-function testCondition() {
-    if (!window.conditionEditor) return;
+// Test code
+function testCode(type) {
+    let code = '';
     
-    const code = window.conditionEditor.getValue();
+    if (type === 'condition') {
+        code = window.conditionEditor.getValue();
+    } else {
+        code = window.actionEditor.getValue();
+    }
     
-    if (!code) {
-        showToast('Warning', 'Please enter condition code to test', 'warning');
+    if (!code.trim()) {
+        showToast('Error', 'Please enter some code to test', 'error');
         return;
     }
     
-    // Send to server for testing
+    // Send code for testing
     fetch('/rules/test_code', {
         method: 'POST',
         headers: {
@@ -698,50 +728,19 @@ function testCondition() {
         },
         body: JSON.stringify({
             code: code,
-            type: 'condition',
-            classId: selectedClass
+            type: type
         })
     })
     .then(response => response.json())
     .then(result => {
-        displayTestResults('condition', result);
+        displayTestResults(type, result);
     })
     .catch(error => {
-        showToast('Error', 'Error testing condition code', 'error');
-        console.error('Error:', error);
-    });
-}
-
-// Test action code
-function testAction() {
-    if (!window.actionEditor) return;
-    
-    const code = window.actionEditor.getValue();
-    
-    if (!code) {
-        showToast('Warning', 'Please enter action code to test', 'warning');
-        return;
-    }
-    
-    // Send to server for testing
-    fetch('/rules/test_code', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            code: code,
-            type: 'action',
-            classId: selectedClass
-        })
-    })
-    .then(response => response.json())
-    .then(result => {
-        displayTestResults('action', result);
-    })
-    .catch(error => {
-        showToast('Error', 'Error testing action code', 'error');
-        console.error('Error:', error);
+        console.error('Error testing code:', error);
+        displayTestResults(type, {
+            success: false,
+            error: error.message || 'An error occurred during testing'
+        });
     });
 }
 
@@ -1100,7 +1099,7 @@ function editRuleLine(lineId, isCondition) {
     // Set modal title
     document.getElementById('ruleLineModalTitle').textContent = `Edit ${isCondition ? 'Condition' : 'Action'} Line`;
     
-    // Load parameters
+    // IMPORTANT FIX: Pass the existing parameters to the handleFunctionSelection function
     handleFunctionSelection(line.parameters);
     
     // Show the modal
@@ -1129,11 +1128,13 @@ function handleFunctionSelection(existingParams = null) {
     const func = allFunctions.find(f => f.GBF_ID == functionId || f.FUNC_ID == functionId);
     
     if (!func) {
+        console.error('Function not found with ID:', functionId);
         showToast('Error', 'Function not found', 'error');
         return;
     }
     
     const paramCount = func.PARAM_COUNT || 0;
+    console.log(`Function ${func.FUNC_NAME || func.name} has ${paramCount} parameters`);
     
     // Get function parameters if available
     let funcParams = [];

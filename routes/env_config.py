@@ -108,16 +108,17 @@ def test_connection():
                         'message': f'Oracle connection error: {error}'
                     })
                 
-                # Test a simple query
+                # Test a simple query - Get Oracle server date
                 cursor = oracle_conn.cursor()
-                cursor.execute("SELECT 'Connection successful' FROM DUAL")
+                cursor.execute("SELECT TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS') AS SERVER_DATE FROM DUAL")
                 result = cursor.fetchone()
+                server_date = result[0] if result else "Unknown"
                 cursor.close()
                 oracle_conn.close()
                 
                 return jsonify({
                     'success': True,
-                    'message': 'Oracle connection successful!',
+                    'message': f'Oracle connection successful! Server date: {server_date}',
                     'handle': f"oracle_{data['envName'].lower().replace(' ', '_')}"
                 })
                 

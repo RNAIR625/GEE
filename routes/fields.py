@@ -19,6 +19,11 @@ def get_fields():
     fields = query_db('SELECT * FROM GEE_FIELDS')
     return jsonify([dict(field) for field in fields])
 
+@fields_bp.route('/get_fields_by_class/<int:class_id>')
+def get_fields_by_class(class_id):
+    fields = query_db('SELECT * FROM GEE_FIELDS WHERE GFC_ID = ?', (class_id,))
+    return jsonify([dict(field) for field in fields])
+
 @fields_bp.route('/add_field', methods=['POST'])
 def add_field():
     data = request.json

@@ -139,7 +139,7 @@
         <a href="{{ url_for('fields.fields_page') }}" class="sidebar-item {% if active_page == 'fields' %}active{% endif %}">
             <i class="fas fa-keyboard me-2"></i> Fields
         </a>
-        <a href="{{ url_for('function') }}" class="sidebar-item {% if active_page == 'function' %}active{% endif %}">
+        <a href="{{ url_for('functions.functions_page') }}" class="sidebar-item {% if active_page == 'function' %}active{% endif %}">
             <i class="fas fa-code me-2"></i> Functions
         </a>
         <a href="{{ url_for('tables.tables_page') }}" class="sidebar-item {% if active_page == 'tables' %}active{% endif %}">
@@ -155,7 +155,7 @@
             <i class="fas fa-desktop me-2"></i> Stations
         </a>
         <a href="{{ url_for('flow_designer') }}" class="sidebar-item {% if active_page == 'flow_designer' %}active{% endif %}">
-            <i class="fas fa-diagram-project me-2"></i> Flow Designer
+            <i class="fas fa-project-diagram me-2"></i> Flow Designer
         </a>
         <a href="{{ url_for('env_config.env_config_page') }}" class="sidebar-item {% if active_page == 'env_config' %}active{% endif %}">
             <i class="fas fa-cogs me-2"></i> Environment Config

@@ -8,6 +8,9 @@ def get_oracle_connection(username, password, host, port, service_name, sid=None
     """
     Establish a connection to an Oracle database using either SERVICE_NAME or SID
     """
+    import pdb
+    pdb.set_trace()
+    
     try:
         # Try to initialize Oracle client from LD_LIBRARY_PATH
         if hasattr(cx_Oracle, 'init_oracle_client'):

@@ -7,14 +7,8 @@ from datetime import datetime
 # Import database helpers
 from db_helpers import get_db, close_connection, init_db
 
-# Import route blueprints
-from routes.base import base_bp
-from routes.classes import classes_bp
-from routes.fields import fields_bp
-from routes.env_config import env_config_bp
-from routes.tables import tables_bp
-from routes.rule_groups import rule_groups_bp
-from routes.rules import rules_bp  # Add the new rules blueprint
+# Import blueprint registration function
+from routes import register_blueprints
 
 app = Flask(__name__)
 
@@ -28,13 +22,7 @@ def close_db_connection(exception):
     close_connection(exception)
 
 # Register all blueprints
-app.register_blueprint(base_bp, url_prefix='/')
-app.register_blueprint(classes_bp, url_prefix='/class')
-app.register_blueprint(fields_bp, url_prefix='/fields')
-app.register_blueprint(env_config_bp, url_prefix='/env_config')
-app.register_blueprint(tables_bp, url_prefix='/tables')
-app.register_blueprint(rule_groups_bp, url_prefix='/rule_groups')
-app.register_blueprint(rules_bp, url_prefix='/rules')  # Register the rules blueprint
+register_blueprints(app)
 
 # Make APP_RUNTIME_ID available to all templates
 @app.context_processor
@@ -42,9 +30,6 @@ def inject_runtime_id():
     return dict(app_runtime_id=APP_RUNTIME_ID)
 
 # Add remaining routes that haven't been migrated to blueprints yet
-@app.route('/function')
-def function():
-    return render_template('function.html', active_page='function')
 
 
 @app.route('/stations')

@@ -119,52 +119,51 @@
                     
                     <!-- Code Editor Mode -->
                     <div id="codeEditorMode">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="card mb-3">
-                                    <div class="card-header d-flex justify-content-between align-items-center">
-                                        <h5 class="mb-0">Condition</h5>
-                                        <div>
-                                            <button type="button" class="btn btn-sm btn-primary me-1" id="insertFunctionBtn">
-                                                <i class="fas fa-code me-1"></i>Insert Function
-                                            </button>
-                                            <button type="button" class="btn btn-sm btn-secondary me-1" id="insertFieldBtn">
-                                                <i class="fas fa-database me-1"></i>Insert Field
-                                            </button>
-                                            <button type="button" class="btn btn-sm btn-success" id="testConditionBtn">
-                                                <i class="fas fa-play me-1"></i>Test
-                                            </button>
-                                        </div>
+                        <div class="col-md-12 mb-3">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Action</h5>
+                                    <div>
+                                        <button type="button" class="btn btn-sm btn-primary me-1" id="insertActionFunctionBtn">
+                                            <i class="fas fa-code me-1"></i>Insert Function
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-secondary me-1" id="insertActionFieldBtn">
+                                            <i class="fas fa-database me-1"></i>Insert Field
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-success" id="testActionBtn">
+                                            <i class="fas fa-play me-1"></i>Test
+                                        </button>
                                     </div>
-                                    <div class="card-body">
-                                        <textarea id="conditionCode" class="form-control code-editor"></textarea>
-                                        <div id="conditionResults" class="alert mt-3 d-none">
-                                            <div id="conditionResultsContent"></div>
-                                        </div>
+                                </div>
+                                <div class="card-body">
+                                    <textarea id="actionCode" class="form-control code-editor"></textarea>
+                                    <div id="actionResults" class="alert mt-3 d-none">
+                                        <div id="actionResultsContent"></div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <div class="card mb-3">
-                                    <div class="card-header d-flex justify-content-between align-items-center">
-                                        <h5 class="mb-0">Action</h5>
-                                        <div>
-                                            <button type="button" class="btn btn-sm btn-primary me-1" onclick="openFunctionSelector('action')">
-                                                <i class="fas fa-code me-1"></i>Insert Function
-                                            </button>
-                                            <button type="button" class="btn btn-sm btn-secondary me-1" onclick="openFieldSelector('action')">
-                                                <i class="fas fa-database me-1"></i>Insert Field
-                                            </button>
-                                            <button type="button" class="btn btn-sm btn-success" id="testActionBtn">
-                                                <i class="fas fa-play me-1"></i>Test
-                                            </button>
-                                        </div>
+                        </div>
+                        
+                        <div class="col-md-12 mb-3">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Condition</h5>
+                                    <div>
+                                        <button type="button" class="btn btn-sm btn-primary me-1" id="insertConditionFunctionBtn">
+                                            <i class="fas fa-code me-1"></i>Insert Function
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-secondary me-1" id="insertConditionFieldBtn">
+                                            <i class="fas fa-database me-1"></i>Insert Field
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-success" id="testConditionBtn">
+                                            <i class="fas fa-play me-1"></i>Test
+                                        </button>
                                     </div>
-                                    <div class="card-body">
-                                        <textarea id="actionCode" class="form-control code-editor"></textarea>
-                                        <div id="actionResults" class="alert mt-3 d-none">
-                                            <div id="actionResultsContent"></div>
-                                        </div>
+                                </div>
+                                <div class="card-body">
+                                    <textarea id="conditionCode" class="form-control code-editor"></textarea>
+                                    <div id="conditionResults" class="alert mt-3 d-none">
+                                        <div id="conditionResultsContent"></div>
                                     </div>
                                 </div>
                             </div>
@@ -173,68 +172,67 @@
                     
                     <!-- Structured Mode -->
                     <div id="structuredMode" class="d-none">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <div class="card">
-                                    <div class="card-header d-flex justify-content-between align-items-center">
-                                        <h5 class="mb-0">Conditions</h5>
-                                        <button type="button" class="btn btn-sm btn-primary" onclick="addRuleLine(true)">
-                                            <i class="fas fa-plus me-1"></i>Add Condition
-                                        </button>
-                                    </div>
-                                    <div class="card-body p-0">
-                                        <div class="table-responsive">
-                                            <table class="table table-hover border-bottom mb-0">
-                                                <thead class="bg-light">
-                                                    <tr>
-                                                        <th>Function</th>
-                                                        <th>Parameters</th>
-                                                        <th class="text-end">Actions</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="conditionLinesList">
-                                                    <!-- Condition lines will be loaded here -->
-                                                    <tr id="noConditionLines">
-                                                        <td colspan="3" class="text-center text-muted py-3">
-                                                            <i class="fas fa-info-circle me-2"></i>
-                                                            No condition lines defined. Add a condition line to start.
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
+                        <div class="col-md-12 mb-3">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Actions</h5>
+                                    <button type="button" class="btn btn-sm btn-primary" onclick="addRuleLine(false)">
+                                        <i class="fas fa-plus me-1"></i>Add Action
+                                    </button>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover border-bottom mb-0">
+                                            <thead class="bg-light">
+                                                <tr>
+                                                    <th>Function</th>
+                                                    <th>Parameters</th>
+                                                    <th class="text-end">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="actionLinesList">
+                                                <!-- Action lines will be loaded here -->
+                                                <tr id="noActionLines">
+                                                    <td colspan="3" class="text-center text-muted py-3">
+                                                        <i class="fas fa-info-circle me-2"></i>
+                                                        No action lines defined. Add an action line to start.
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <div class="card">
-                                    <div class="card-header d-flex justify-content-between align-items-center">
-                                        <h5 class="mb-0">Actions</h5>
-                                        <button type="button" class="btn btn-sm btn-primary" onclick="addRuleLine(false)">
-                                            <i class="fas fa-plus me-1"></i>Add Action
-                                        </button>
-                                    </div>
-                                    <div class="card-body p-0">
-                                        <div class="table-responsive">
-                                            <table class="table table-hover border-bottom mb-0">
-                                                <thead class="bg-light">
-                                                    <tr>
-                                                        <th>Function</th>
-                                                        <th>Parameters</th>
-                                                        <th class="text-end">Actions</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="actionLinesList">
-                                                    <!-- Action lines will be loaded here -->
-                                                    <tr id="noActionLines">
-                                                        <td colspan="3" class="text-center text-muted py-3">
-                                                            <i class="fas fa-info-circle me-2"></i>
-                                                            No action lines defined. Add an action line to start.
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
+                        </div>
+                        
+                        <div class="col-md-12 mb-3">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Conditions</h5>
+                                    <button type="button" class="btn btn-sm btn-primary" onclick="addRuleLine(true)">
+                                        <i class="fas fa-plus me-1"></i>Add Condition
+                                    </button>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover border-bottom mb-0">
+                                            <thead class="bg-light">
+                                                <tr>
+                                                    <th>Function</th>
+                                                    <th>Parameters</th>
+                                                    <th class="text-end">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="conditionLinesList">
+                                                <!-- Condition lines will be loaded here -->
+                                                <tr id="noConditionLines">
+                                                    <td colspan="3" class="text-center text-muted py-3">
+                                                        <i class="fas fa-info-circle me-2"></i>
+                                                        No condition lines defined. Add a condition line to start.
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             </div>
