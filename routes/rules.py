@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, render_template
 from db_helpers import get_db, query_db, modify_db
 from datetime import datetime
 import json
+import logging
 
 rules_bp = Blueprint('rules', __name__)
 
@@ -29,7 +30,7 @@ def get_rules():
             
         return jsonify(rules_list)
     except Exception as e:
-        print(f"Error fetching rules: {str(e)}")
+        logging.error(f"Error fetching rules: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 @rules_bp.route('/add_rule', methods=['POST'])
@@ -70,7 +71,7 @@ def add_rule():
         
         return jsonify({"success": True, "message": "Rule added successfully", "id": rule_id})
     except Exception as e:
-        print(f"Error adding rule: {str(e)}")
+        logging.error(f"Error adding rule: {str(e)}")
         return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
 
 @rules_bp.route('/update_rule', methods=['PUT'])
@@ -121,7 +122,7 @@ def update_rule():
         
         return jsonify({"success": True, "message": "Rule updated successfully"})
     except Exception as e:
-        print(f"Error updating rule: {str(e)}")
+        logging.error(f"Error updating rule: {str(e)}")
         return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
 
 @rules_bp.route('/delete_rule/<int:rule_id>', methods=['DELETE'])
@@ -150,9 +151,15 @@ def delete_rule(rule_id):
         
         return jsonify({"success": True, "message": "Rule deleted successfully"})
     except Exception as e:
-        print(f"Error deleting rule: {str(e)}")
+        logging.error(f"Error deleting rule: {str(e)}")
         return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
 
+# IMPORTANT SECURITY NOTE:
+# The following 'test_code' endpoint is a MOCK testing facility.
+# It DOES NOT actually execute the provided code.
+# Executing arbitrary code received from a client is a SIGNIFICANT SECURITY RISK.
+# A production implementation of such a feature would require a
+# robust, isolated sandboxed environment to prevent malicious code execution.
 @rules_bp.route('/test_code', methods=['POST'])
 def test_code():
     """Test rule code execution with sample data"""
@@ -191,7 +198,7 @@ def test_code():
         
         # In a real system, you would evaluate this safely, possibly on the server side
         # This is a simplified example - in production, you'd use a proper sandboxed environment
-        result = {"success": True, "result": "Code would execute here with mock data"}
+        result = {"success": True, "result": "This is a mock test. Actual code execution is not performed. The provided code structure appears valid with mock data."}
         
         return jsonify(result)
         
@@ -253,7 +260,7 @@ def add_rule_line():
         
         return jsonify({"success": True, "message": "Rule line added successfully", "id": line_id})
     except Exception as e:
-        print(f"Error adding rule line: {str(e)}")
+        logging.error(f"Error adding rule line: {str(e)}")
         return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
 
 @rules_bp.route('/get_rule_lines/<int:rule_id>', methods=['GET'])
@@ -292,7 +299,7 @@ def get_rule_lines(rule_id):
             
         return jsonify(lines_list)
     except Exception as e:
-        print(f"Error fetching rule lines: {str(e)}")
+        logging.error(f"Error fetching rule lines: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 @rules_bp.route('/update_rule_line', methods=['PUT'])
@@ -350,7 +357,7 @@ def update_rule_line():
         
         return jsonify({"success": True, "message": "Rule line updated successfully"})
     except Exception as e:
-        print(f"Error updating rule line: {str(e)}")
+        logging.error(f"Error updating rule line: {str(e)}")
         return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
 
 @rules_bp.route('/delete_rule_line/<int:line_id>', methods=['DELETE'])
@@ -364,7 +371,7 @@ def delete_rule_line(line_id):
         
         return jsonify({"success": True, "message": "Rule line deleted successfully"})
     except Exception as e:
-        print(f"Error deleting rule line: {str(e)}")
+        logging.error(f"Error deleting rule line: {str(e)}")
         return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
 
 @rules_bp.route('/generate_code/<int:rule_id>', methods=['GET'])
@@ -422,5 +429,5 @@ def generate_code(rule_id):
             "actionCode": "\n".join(action_code)
         })
     except Exception as e:
-        print(f"Error generating code: {str(e)}")
+        logging.error(f"Error generating code: {str(e)}")
         return jsonify({"error": str(e)}), 500
