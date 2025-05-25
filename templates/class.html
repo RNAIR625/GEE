@@ -27,9 +27,14 @@
     <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h4 class="card-title mb-0">Field Classes</h4>
-            <button class="btn btn-primary" onclick="openNewClassModal()">
-                <i class="fas fa-plus me-2"></i>New Class
-            </button>
+            <div>
+                <button class="btn btn-success me-2" onclick="openSwaggerImportModal()">
+                    <i class="fas fa-file-import me-2"></i>Import Swagger
+                </button>
+                <button class="btn btn-primary" onclick="openNewClassModal()">
+                    <i class="fas fa-plus me-2"></i>New Class
+                </button>
+            </div>
         </div>
         
         <div class="table-responsive">
@@ -101,6 +106,70 @@
         </div>
     </div>
 </div>
+
+<!-- Swagger Import Modal -->
+<div class="modal fade" id="swaggerImportModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Import Swagger Definition</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="swaggerImportForm">
+                    <div class="mb-3">
+                        <label class="form-label">Swagger File</label>
+                        <input type="file" class="form-control" id="swaggerFile" accept=".json,.yaml,.yml" onchange="loadSwaggerFile()">
+                        <div class="form-text">Upload a Swagger/OpenAPI file in JSON or YAML format</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Or Paste Content</label>
+                        <textarea class="form-control" id="swaggerContent" rows="8" placeholder="Paste your Swagger/OpenAPI definition here..."></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">File Type</label>
+                                <select class="form-control" id="swaggerFileType">
+                                    <option value="json">JSON</option>
+                                    <option value="yaml">YAML</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Sync Mode</label>
+                                <select class="form-control" id="swaggerSyncMode">
+                                    <option value="preview">Preview Changes</option>
+                                    <option value="execute">Execute Import</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Target Class (Optional)</label>
+                        <input type="text" class="form-control" id="targetClassName" placeholder="Leave empty to sync all classes">
+                        <div class="form-text">Specify a specific field class name to sync only that class</div>
+                    </div>
+                </form>
+                
+                <!-- Preview Results -->
+                <div id="swaggerPreview" class="mt-4" style="display: none;">
+                    <h6>Preview Results:</h6>
+                    <div class="alert alert-info">
+                        <div id="previewSummary"></div>
+                    </div>
+                    <div id="previewDetails"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-info" onclick="previewSwaggerImport()">Preview</button>
+                <button type="button" class="btn btn-success" onclick="executeSwaggerImport()">Import</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -108,6 +177,7 @@
     let currentDeleteId = null;
     const classModal = new bootstrap.Modal(document.getElementById('classModal'));
     const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    const swaggerImportModal = new bootstrap.Modal(document.getElementById('swaggerImportModal'));
 
     // Load classes when page loads
     document.addEventListener('DOMContentLoaded', loadClasses);
@@ -215,6 +285,161 @@
                 alert('Error: ' + data.message);
             }
         });
+    }
+
+    function openSwaggerImportModal() {
+        document.getElementById('swaggerImportForm').reset();
+        document.getElementById('swaggerPreview').style.display = 'none';
+        swaggerImportModal.show();
+    }
+
+    function loadSwaggerFile() {
+        const fileInput = document.getElementById('swaggerFile');
+        const file = fileInput.files[0];
+        
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('swaggerContent').value = e.target.result;
+                
+                // Auto-detect file type
+                const fileName = file.name.toLowerCase();
+                if (fileName.endsWith('.yaml') || fileName.endsWith('.yml')) {
+                    document.getElementById('swaggerFileType').value = 'yaml';
+                } else {
+                    document.getElementById('swaggerFileType').value = 'json';
+                }
+            };
+            reader.readAsText(file);
+        }
+    }
+
+    function previewSwaggerImport() {
+        const content = document.getElementById('swaggerContent').value;
+        const fileType = document.getElementById('swaggerFileType').value;
+        const targetClass = document.getElementById('targetClassName').value;
+        
+        if (!content.trim()) {
+            alert('Please provide Swagger content!');
+            return;
+        }
+        
+        const requestData = {
+            file_content: content,
+            file_type: fileType,
+            sync_mode: 'preview'
+        };
+        
+        if (targetClass.trim()) {
+            requestData.target_class_name = targetClass.trim();
+        }
+        
+        fetch('/classes/api/swagger-import', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            displaySwaggerPreview(data);
+        })
+        .catch(error => {
+            alert('Error: ' + error.message);
+        });
+    }
+
+    function executeSwaggerImport() {
+        const content = document.getElementById('swaggerContent').value;
+        const fileType = document.getElementById('swaggerFileType').value;
+        const targetClass = document.getElementById('targetClassName').value;
+        
+        if (!content.trim()) {
+            alert('Please provide Swagger content!');
+            return;
+        }
+        
+        const requestData = {
+            file_content: content,
+            file_type: fileType,
+            sync_mode: 'execute'
+        };
+        
+        if (targetClass.trim()) {
+            requestData.target_class_name = targetClass.trim();
+        }
+        
+        fetch('/classes/api/swagger-import', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                swaggerImportModal.hide();
+                loadClasses();
+                alert('Swagger import completed successfully!');
+            } else {
+                alert('Import failed: ' + (data.errors || []).join(', '));
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error.message);
+        });
+    }
+
+    function displaySwaggerPreview(data) {
+        const previewDiv = document.getElementById('swaggerPreview');
+        const summaryDiv = document.getElementById('previewSummary');
+        const detailsDiv = document.getElementById('previewDetails');
+        
+        if (data.success) {
+            const summary = data.summary;
+            summaryDiv.innerHTML = `
+                <strong>Changes Preview:</strong><br>
+                Field Classes to Insert: ${summary.field_classes_to_insert}<br>
+                Field Classes to Update: ${summary.field_classes_to_update}<br>
+                Field Classes to Delete: ${summary.field_classes_to_delete}<br>
+                Total Fields: ${summary.total_fields}
+            `;
+            
+            let detailsHtml = '';
+            
+            if (data.operations.field_classes.insert.length > 0) {
+                detailsHtml += '<h6 class="text-success">Classes to Insert:</h6><ul>';
+                data.operations.field_classes.insert.forEach(cls => {
+                    detailsHtml += `<li>${cls.name} (${cls.type}) - ${cls.fields.length} fields</li>`;
+                });
+                detailsHtml += '</ul>';
+            }
+            
+            if (data.operations.field_classes.update.length > 0) {
+                detailsHtml += '<h6 class="text-warning">Classes to Update:</h6><ul>';
+                data.operations.field_classes.update.forEach(cls => {
+                    detailsHtml += `<li>${cls.name} (${cls.type})</li>`;
+                });
+                detailsHtml += '</ul>';
+            }
+            
+            if (data.operations.field_classes.delete.length > 0) {
+                detailsHtml += '<h6 class="text-danger">Classes to Delete:</h6><ul>';
+                data.operations.field_classes.delete.forEach(cls => {
+                    detailsHtml += `<li>${cls.name}</li>`;
+                });
+                detailsHtml += '</ul>';
+            }
+            
+            detailsDiv.innerHTML = detailsHtml;
+        } else {
+            summaryDiv.innerHTML = '<strong class="text-danger">Import Failed:</strong><br>' + (data.errors || []).join('<br>');
+            detailsDiv.innerHTML = '';
+        }
+        
+        previewDiv.style.display = 'block';
     }
 </script>
 {% endblock %}
