@@ -157,17 +157,29 @@ class SwaggerParser:
         if swagger_type == 'string':
             if swagger_format == 'date':
                 db_type = 'DATE'
+                size = 10  # YYYY-MM-DD
             elif swagger_format == 'date-time':
                 db_type = 'DATETIME'
+                size = 19  # YYYY-MM-DD HH:MM:SS
             elif swagger_format == 'email':
                 db_type = 'VARCHAR'
                 size = 255
             elif swagger_format == 'uuid':
                 db_type = 'VARCHAR'
                 size = 36
+            elif prop_def.get('pattern'):
+                # Use VARCHAR for strings with patterns for better indexing
+                db_type = 'VARCHAR'
+                size = prop_def.get('maxLength', 255)
             else:
-                db_type = 'TEXT'
-                size = prop_def.get('maxLength', 255) if prop_def.get('maxLength') else None
+                # Check for length constraints
+                max_length = prop_def.get('maxLength')
+                if max_length and max_length <= 255:
+                    db_type = 'VARCHAR'
+                    size = max_length
+                else:
+                    db_type = 'TEXT'
+                    size = max_length if max_length else None
                 
         elif swagger_type == 'integer':
             if swagger_format == 'int64':
@@ -183,6 +195,7 @@ class SwaggerParser:
             else:
                 db_type = 'DECIMAL'
                 precision = 10  # Default precision
+                size = 2  # Default scale for monetary values
                 
         elif swagger_type == 'boolean':
             db_type = 'BOOLEAN'
@@ -205,21 +218,48 @@ class SwaggerParser:
         Returns:
             str: Class type
         """
-        # Check if it's a request/response model
-        if 'example' in schema or 'examples' in schema:
-            return 'API_MODEL'
-        
-        # Check for common patterns
         properties = schema.get('properties', {})
+        description = schema.get('description', '').lower()
         
-        if any(prop in properties for prop in ['id', 'uuid', 'identifier']):
+        # Check description for hints
+        if 'request' in description:
+            return 'REQUEST'
+        elif 'response' in description:
+            return 'RESPONSE'
+        elif 'error' in description:
+            return 'ERROR'
+        elif 'tax' in description or 'calculation' in description:
+            return 'CALCULATION'
+        
+        # Check property patterns for better classification
+        property_names = list(properties.keys())
+        property_names_lower = [prop.lower() for prop in property_names]
+        
+        # Financial/Tax patterns
+        if any(prop in property_names_lower for prop in ['gst', 'hst', 'pst', 'tax', 'amount', 'value']):
+            return 'TAX_CALCULATION'
+        
+        # Location patterns
+        if any(prop in property_names_lower for prop in ['pincode', 'postal', 'address', 'location']):
+            return 'LOCATION'
+        
+        # Identity patterns
+        if any(prop in property_names_lower for prop in ['id', 'uuid', 'identifier', 'objectid']):
             return 'ENTITY'
-        elif any(prop in properties for prop in ['name', 'title', 'label']):
-            return 'REFERENCE'
-        elif any(prop in properties for prop in ['email', 'phone', 'address']):
+        
+        # Contact patterns
+        elif any(prop in property_names_lower for prop in ['email', 'phone', 'contact']):
             return 'CONTACT'
-        elif any(prop in properties for prop in ['amount', 'price', 'cost', 'total']):
-            return 'FINANCIAL'
+        
+        # Reference patterns
+        elif any(prop in property_names_lower for prop in ['name', 'title', 'label']):
+            return 'REFERENCE'
+        
+        # Error patterns
+        elif any(prop in property_names_lower for prop in ['code', 'message', 'error']):
+            return 'ERROR'
+        
+        # Default to DATA for generic schemas
         else:
             return 'DATA'
     
@@ -349,14 +389,9 @@ class SwaggerParser:
                     'fields': model_def['fields']
                 })
         
-        # Check for field classes to delete (if not in Swagger)
-        if not target_class_name:  # Only delete when syncing all
-            for existing_name in existing_classes_map:
-                if existing_name not in self.extracted_models:
-                    operations['field_classes']['delete'].append({
-                        'gfc_id': existing_classes_map[existing_name]['GFC_ID'],
-                        'name': existing_name
-                    })
+        # NOTE: Do not delete existing field classes not in Swagger
+        # This preserves existing field classes when importing new ones
+        # Users can manually delete field classes if needed
         
         return operations
     

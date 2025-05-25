@@ -91,20 +91,56 @@ def convert_value_to_field_type(value, field_def):
     field_type = field_def['GF_TYPE'].upper()
     
     try:
-        if field_type in ['INTEGER', 'INT']:
+        if field_type in ['INTEGER', 'INT', 'BIGINT']:
+            # Handle string numbers with currency symbols
+            if isinstance(value, str):
+                # Remove currency symbols and whitespace
+                cleaned_value = value.replace('$', '').replace(',', '').strip()
+                return int(float(cleaned_value))  # Convert via float to handle decimals
             return int(value)
-        elif field_type in ['FLOAT', 'REAL', 'DECIMAL', 'NUMBER']:
+            
+        elif field_type in ['FLOAT', 'REAL', 'DECIMAL', 'NUMBER', 'DOUBLE']:
+            # Handle string numbers with currency symbols
+            if isinstance(value, str):
+                # Remove currency symbols and whitespace
+                cleaned_value = value.replace('$', '').replace(',', '').strip()
+                return float(cleaned_value)
             return float(value)
+            
         elif field_type in ['TEXT', 'VARCHAR', 'STRING']:
             return str(value)
+            
         elif field_type in ['BOOLEAN', 'BOOL']:
             if isinstance(value, str):
                 return value.lower() in ['true', '1', 'yes', 'on']
             return bool(value)
+            
+        elif field_type in ['DATE']:
+            # Ensure date format is consistent
+            if isinstance(value, str):
+                return value  # Assume it's already in correct format
+            return str(value)
+            
+        elif field_type in ['DATETIME']:
+            # Ensure datetime format is consistent
+            if isinstance(value, str):
+                return value  # Assume it's already in correct format
+            return str(value)
+            
+        elif field_type in ['JSON']:
+            # Handle JSON fields
+            if isinstance(value, (dict, list)):
+                import json
+                return json.dumps(value)
+            return str(value)
+            
         else:
             return str(value)  # Default to string
+            
     except (ValueError, TypeError):
-        return field_def.get('GF_DEFAULT_VALUE', None)
+        # Return default value or None if conversion fails
+        default_value = field_def.get('GF_DEFAULT_VALUE')
+        return default_value if default_value is not None else None
 
 
 def create_swagger_models_from_fields(api, field_classes_data, fields_data):
