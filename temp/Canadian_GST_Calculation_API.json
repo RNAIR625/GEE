@@ -1,0 +1,204 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Canadian GST Calculation API",
+    "description": "API for calculating Canadian GST, HST, and PST based on product and location",
+    "version": "1.0.0",
+    "contact": {
+      "name": "API Support",
+      "email": "support@example.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.example.com/v1",
+      "description": "Production server"
+    },
+    {
+      "url": "https://api-staging.example.com/v1",
+      "description": "Staging server"
+    }
+  ],
+  "paths": {
+    "/tax/calculate": {
+      "post": {
+        "summary": "Calculate Canadian taxes for a product",
+        "description": "Calculates GST, HST, and PST based on product ID and postal codes",
+        "operationId": "calculateTax",
+        "tags": ["Tax Calculation"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaxCalculationRequest"
+              },
+              "example": {
+                "objectId": "Parker Pen",
+                "userPincode": "M5V 3A8",
+                "storePincode": "K1A 0B1"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful tax calculation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxCalculationResponse"
+                },
+                "example": {
+                  "objectValue": "$46",
+                  "objectGST": "$6.56",
+                  "objectHST": "$1.5",
+                  "objectPST": "$0"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": "INVALID_REQUEST",
+                  "message": "Invalid postal code format"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Product not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": "PRODUCT_NOT_FOUND",
+                  "message": "Product with given ID not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": "INTERNAL_ERROR",
+                  "message": "An internal error occurred"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "TaxCalculationRequest": {
+        "type": "object",
+        "required": ["objectId", "userPincode", "storePincode"],
+        "properties": {
+          "objectId": {
+            "type": "string",
+            "description": "Product identifier",
+            "example": "Parker Pen"
+          },
+          "userPincode": {
+            "type": "string",
+            "description": "User's postal code",
+            "pattern": "^[A-Za-z]\\d[A-Za-z] ?\\d[A-Za-z]\\d$",
+            "example": "M5V 3A8"
+          },
+          "storePincode": {
+            "type": "string",
+            "description": "Store's postal code",
+            "pattern": "^[A-Za-z]\\d[A-Za-z] ?\\d[A-Za-z]\\d$",
+            "example": "K1A 0B1"
+          }
+        }
+      },
+      "TaxCalculationResponse": {
+        "type": "object",
+        "required": ["objectValue", "objectGST", "objectHST", "objectPST"],
+        "properties": {
+          "objectValue": {
+            "type": "string",
+            "description": "Product value before tax",
+            "pattern": "^\\$\\d+(\\.\\d{2})?$",
+            "example": "$46"
+          },
+          "objectGST": {
+            "type": "string",
+            "description": "Calculated GST amount",
+            "pattern": "^\\$\\d+(\\.\\d{2})?$",
+            "example": "$6.56"
+          },
+          "objectHST": {
+            "type": "string",
+            "description": "Calculated HST amount",
+            "pattern": "^\\$\\d+(\\.\\d{2})?$",
+            "example": "$1.5"
+          },
+          "objectPST": {
+            "type": "string",
+            "description": "Calculated PST amount",
+            "pattern": "^\\$\\d+(\\.\\d{2})?$",
+            "example": "$0"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Error code",
+            "example": "INVALID_REQUEST"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message",
+            "example": "Invalid postal code format"
+          },
+          "details": {
+            "type": "object",
+            "description": "Additional error details",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API key for authentication"
+      }
+    }
+  },
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Tax Calculation",
+      "description": "Endpoints for calculating Canadian taxes"
+    }
+  ]
+}
