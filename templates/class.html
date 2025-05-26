@@ -28,6 +28,9 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h4 class="card-title mb-0">Field Classes</h4>
             <div>
+                <button class="btn btn-danger me-2" id="bulkDeleteBtn" onclick="bulkDeleteClasses()" style="display: none;">
+                    <i class="fas fa-trash me-2"></i>Delete Selected
+                </button>
                 <button class="btn btn-success me-2" onclick="openSwaggerImportModal()">
                     <i class="fas fa-file-import me-2"></i>Import Swagger
                 </button>
@@ -41,6 +44,9 @@
             <table class="table table-hover">
                 <thead>
                     <tr>
+                        <th width="40">
+                            <input type="checkbox" id="selectAllClasses" onchange="toggleAllClasses(this)">
+                        </th>
                         <th>Class Name</th>
                         <th>Type</th>
                         <th>Description</th>
@@ -112,60 +118,74 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Import Swagger Definition</h5>
+                <h5 class="modal-title">Import Swagger/OpenAPI</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="swaggerImportForm">
-                    <div class="mb-3">
-                        <label class="form-label">Swagger File</label>
-                        <input type="file" class="form-control" id="swaggerFile" accept=".json,.yaml,.yml" onchange="loadSwaggerFile()">
-                        <div class="form-text">Upload a Swagger/OpenAPI file in JSON or YAML format</div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Or Paste Content</label>
-                        <textarea class="form-control" id="swaggerContent" rows="8" placeholder="Paste your Swagger/OpenAPI definition here..."></textarea>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">File Type</label>
-                                <select class="form-control" id="swaggerFileType">
-                                    <option value="json">JSON</option>
-                                    <option value="yaml">YAML</option>
-                                </select>
-                            </div>
+                <div id="swaggerImportSteps">
+                    <!-- Step 1: File Selection -->
+                    <div id="step1" class="import-step">
+                        <h6>Step 1: Select Swagger File</h6>
+                        <div class="mb-3">
+                            <label class="form-label">Upload Swagger/OpenAPI File (JSON or YAML)</label>
+                            <input type="file" class="form-control" id="swaggerFile" accept=".json,.yaml,.yml" onchange="handleFileSelect()">
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Sync Mode</label>
-                                <select class="form-control" id="swaggerSyncMode">
-                                    <option value="preview">Preview Changes</option>
-                                    <option value="execute">Execute Import</option>
-                                </select>
-                            </div>
+                        <div class="mb-3">
+                            <label class="form-label">Or select from existing files:</label>
+                            <select class="form-control" id="existingSwaggerFiles" onchange="handleExistingFileSelect()">
+                                <option value="">Select existing file...</option>
+                            </select>
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            This will parse the Swagger file and extract field definitions for import.
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Target Class (Optional)</label>
-                        <input type="text" class="form-control" id="targetClassName" placeholder="Leave empty to sync all classes">
-                        <div class="form-text">Specify a specific field class name to sync only that class</div>
+
+                    <!-- Step 2: Class Configuration -->
+                    <div id="step2" class="import-step d-none">
+                        <h6>Step 2: Configure Field Class</h6>
+                        <div class="mb-3">
+                            <label class="form-label">Field Class Name</label>
+                            <input type="text" class="form-control" id="importClassName" placeholder="Enter class name" required>
+                            <small class="form-text text-muted">This will be the main field class created from the API definition.</small>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="cleanupExisting">
+                                <label class="form-check-label" for="cleanupExisting">
+                                    Clean up existing class and fields with same name
+                                </label>
+                                <small class="form-text text-muted d-block">If checked, any existing class with the same name will be deleted along with its fields.</small>
+                            </div>
+                        </div>
                     </div>
-                </form>
-                
-                <!-- Preview Results -->
-                <div id="swaggerPreview" class="mt-4" style="display: none;">
-                    <h6>Preview Results:</h6>
-                    <div class="alert alert-info">
-                        <div id="previewSummary"></div>
+
+                    <!-- Step 3: Preview -->
+                    <div id="step3" class="import-step d-none">
+                        <h6>Step 3: Preview Import</h6>
+                        <div class="mb-3">
+                            <strong>API Information:</strong>
+                            <div id="apiInfo" class="border p-2 mt-2 bg-light"></div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Field Classes to be Created:</strong>
+                            <div id="fieldClassesPreview" class="border p-2 mt-2 bg-light"></div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Fields to be Created:</strong>
+                            <div id="fieldsPreview" class="border p-2 mt-2 bg-light" style="max-height: 300px; overflow-y: auto;"></div>
+                        </div>
                     </div>
-                    <div id="previewDetails"></div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-info" onclick="previewSwaggerImport()">Preview</button>
-                <button type="button" class="btn btn-success" onclick="executeSwaggerImport()">Import</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" id="prevStepBtn" onclick="previousStep()" style="display: none;">Previous</button>
+                <button type="button" class="btn btn-primary" id="nextStepBtn" onclick="nextStep()" disabled>Next</button>
+                <button type="button" class="btn btn-success" id="importBtn" onclick="performImport()" style="display: none;">
+                    <i class="fas fa-download me-2"></i>Import
+                </button>
             </div>
         </div>
     </div>
@@ -175,12 +195,17 @@
 {% block scripts %}
 <script>
     let currentDeleteId = null;
+    let currentImportStep = 1;
+    let parsedSwaggerData = null;
     const classModal = new bootstrap.Modal(document.getElementById('classModal'));
     const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
     const swaggerImportModal = new bootstrap.Modal(document.getElementById('swaggerImportModal'));
 
     // Load classes when page loads
-    document.addEventListener('DOMContentLoaded', loadClasses);
+    document.addEventListener('DOMContentLoaded', function() {
+        loadClasses();
+        loadExistingSwaggerFiles();
+    });
 
     function loadClasses() {
         fetch('{{ url_for("classes.get_classes") }}')
@@ -192,6 +217,9 @@
                 data.forEach(cls => {
                     const row = `
                         <tr>
+                            <td>
+                                <input type="checkbox" class="class-checkbox" value="${cls.GFC_ID}" onchange="updateBulkDeleteButton()">
+                            </td>
                             <td>${cls.FIELD_CLASS_NAME}</td>
                             <td>${cls.CLASS_TYPE}</td>
                             <td>${cls.DESCRIPTION || ''}</td>
@@ -287,159 +315,320 @@
         });
     }
 
+    // Swagger Import Functions
     function openSwaggerImportModal() {
-        document.getElementById('swaggerImportForm').reset();
-        document.getElementById('swaggerPreview').style.display = 'none';
+        currentImportStep = 1;
+        parsedSwaggerData = null;
+        resetImportModal();
         swaggerImportModal.show();
     }
 
-    function loadSwaggerFile() {
+    function resetImportModal() {
+        // Reset all steps
+        document.querySelectorAll('.import-step').forEach(step => step.classList.add('d-none'));
+        document.getElementById('step1').classList.remove('d-none');
+        
+        // Reset form fields
+        document.getElementById('swaggerFile').value = '';
+        document.getElementById('existingSwaggerFiles').value = '';
+        document.getElementById('importClassName').value = '';
+        document.getElementById('cleanupExisting').checked = false;
+        
+        // Reset buttons
+        updateImportButtons();
+    }
+
+    function loadExistingSwaggerFiles() {
+        fetch('{{ url_for("classes.get_swagger_files") }}')
+            .then(response => response.json())
+            .then(data => {
+                const select = document.getElementById('existingSwaggerFiles');
+                select.innerHTML = '<option value="">Select existing file...</option>';
+                
+                data.files.forEach(file => {
+                    const option = document.createElement('option');
+                    option.value = file.path;
+                    option.textContent = file.name;
+                    select.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading existing files:', error);
+            });
+    }
+
+    function handleFileSelect() {
         const fileInput = document.getElementById('swaggerFile');
         const file = fileInput.files[0];
         
         if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                document.getElementById('swaggerContent').value = e.target.result;
-                
-                // Auto-detect file type
-                const fileName = file.name.toLowerCase();
-                if (fileName.endsWith('.yaml') || fileName.endsWith('.yml')) {
-                    document.getElementById('swaggerFileType').value = 'yaml';
-                } else {
-                    document.getElementById('swaggerFileType').value = 'json';
-                }
-            };
-            reader.readAsText(file);
+            document.getElementById('existingSwaggerFiles').value = '';
+            document.getElementById('nextStepBtn').disabled = false;
+        } else {
+            document.getElementById('nextStepBtn').disabled = true;
         }
     }
 
-    function previewSwaggerImport() {
-        const content = document.getElementById('swaggerContent').value;
-        const fileType = document.getElementById('swaggerFileType').value;
-        const targetClass = document.getElementById('targetClassName').value;
+    function handleExistingFileSelect() {
+        const select = document.getElementById('existingSwaggerFiles');
+        if (select.value) {
+            document.getElementById('swaggerFile').value = '';
+            document.getElementById('nextStepBtn').disabled = false;
+        } else {
+            document.getElementById('nextStepBtn').disabled = true;
+        }
+    }
+
+    function nextStep() {
+        if (currentImportStep === 1) {
+            parseSwaggerFile();
+        } else if (currentImportStep === 2) {
+            showPreview();
+        }
+    }
+
+    function previousStep() {
+        currentImportStep--;
+        document.querySelectorAll('.import-step').forEach(step => step.classList.add('d-none'));
+        document.getElementById(`step${currentImportStep}`).classList.remove('d-none');
+        updateImportButtons();
+    }
+
+    function updateImportButtons() {
+        const prevBtn = document.getElementById('prevStepBtn');
+        const nextBtn = document.getElementById('nextStepBtn');
+        const importBtn = document.getElementById('importBtn');
+
+        prevBtn.style.display = currentImportStep > 1 ? 'inline-block' : 'none';
+        nextBtn.style.display = currentImportStep < 3 ? 'inline-block' : 'none';
+        importBtn.style.display = currentImportStep === 3 ? 'inline-block' : 'none';
+
+        nextBtn.disabled = currentImportStep === 1 && !hasFileSelected();
+    }
+
+    function hasFileSelected() {
+        const fileInput = document.getElementById('swaggerFile');
+        const existingSelect = document.getElementById('existingSwaggerFiles');
+        return (fileInput.files.length > 0) || (existingSelect.value !== '');
+    }
+
+    function parseSwaggerFile() {
+        const fileInput = document.getElementById('swaggerFile');
+        const existingSelect = document.getElementById('existingSwaggerFiles');
         
-        if (!content.trim()) {
-            alert('Please provide Swagger content!');
+        let formData = new FormData();
+        
+        if (fileInput.files.length > 0) {
+            formData.append('swagger_file', fileInput.files[0]);
+        } else if (existingSelect.value) {
+            formData.append('existing_file_path', existingSelect.value);
+        } else {
+            alert('Please select a file to import');
             return;
         }
-        
-        const requestData = {
-            file_content: content,
-            file_type: fileType,
-            sync_mode: 'preview'
-        };
-        
-        if (targetClass.trim()) {
-            requestData.target_class_name = targetClass.trim();
-        }
-        
-        fetch('/classes/api/swagger-import', {
+
+        fetch('{{ url_for("classes.parse_swagger") }}', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestData)
+            body: formData
         })
         .then(response => response.json())
         .then(data => {
-            displaySwaggerPreview(data);
+            if (data.success) {
+                parsedSwaggerData = data;
+                currentImportStep = 2;
+                
+                // Pre-fill class name with suggestion
+                document.getElementById('importClassName').value = data.suggested_class_name || '';
+                
+                document.querySelectorAll('.import-step').forEach(step => step.classList.add('d-none'));
+                document.getElementById('step2').classList.remove('d-none');
+                updateImportButtons();
+            } else {
+                alert('Error parsing Swagger file: ' + data.message);
+            }
         })
         .catch(error => {
-            alert('Error: ' + error.message);
+            console.error('Error:', error);
+            alert('Error parsing Swagger file');
         });
     }
 
-    function executeSwaggerImport() {
-        const content = document.getElementById('swaggerContent').value;
-        const fileType = document.getElementById('swaggerFileType').value;
-        const targetClass = document.getElementById('targetClassName').value;
-        
-        if (!content.trim()) {
-            alert('Please provide Swagger content!');
+    function showPreview() {
+        const className = document.getElementById('importClassName').value.trim();
+        if (!className) {
+            alert('Please enter a field class name');
             return;
         }
+
+        // Update API info
+        const apiInfo = document.getElementById('apiInfo');
+        apiInfo.innerHTML = `
+            <strong>Title:</strong> ${parsedSwaggerData.api_info.title}<br>
+            <strong>Description:</strong> ${parsedSwaggerData.api_info.description}<br>
+            <strong>Version:</strong> ${parsedSwaggerData.api_info.version}
+        `;
+
+        // Update field classes preview
+        const classesPreview = document.getElementById('fieldClassesPreview');
+        let classesHtml = '';
+        parsedSwaggerData.field_classes.forEach(fc => {
+            classesHtml += `<div class="mb-2">
+                <strong>${fc.name}</strong> (${fc.type}) - ${fc.fields.length} fields<br>
+                <small class="text-muted">${fc.description}</small>
+            </div>`;
+        });
+        classesPreview.innerHTML = classesHtml || '<em>No field classes found</em>';
+
+        // Update fields preview
+        const fieldsPreview = document.getElementById('fieldsPreview');
+        let fieldsHtml = '<div class="row"><div class="col-md-6"><strong>Input Fields:</strong></div><div class="col-md-6"><strong>Output Fields:</strong></div></div>';
         
-        const requestData = {
-            file_content: content,
-            file_type: fileType,
-            sync_mode: 'execute'
-        };
+        const inputFields = parsedSwaggerData.input_fields || [];
+        const outputFields = parsedSwaggerData.output_fields || [];
         
-        if (targetClass.trim()) {
-            requestData.target_class_name = targetClass.trim();
+        const maxRows = Math.max(inputFields.length, outputFields.length);
+        
+        for (let i = 0; i < maxRows; i++) {
+            fieldsHtml += '<div class="row border-bottom py-1">';
+            
+            // Input field
+            fieldsHtml += '<div class="col-md-6">';
+            if (i < inputFields.length) {
+                const field = inputFields[i];
+                fieldsHtml += `<strong>${field.name}</strong> (${field.type})<br>
+                    <small class="text-muted">${field.description || 'No description'}</small>`;
+            }
+            fieldsHtml += '</div>';
+            
+            // Output field
+            fieldsHtml += '<div class="col-md-6">';
+            if (i < outputFields.length) {
+                const field = outputFields[i];
+                fieldsHtml += `<strong>${field.name}</strong> (${field.type})<br>
+                    <small class="text-muted">${field.description || 'No description'}</small>`;
+            }
+            fieldsHtml += '</div>';
+            
+            fieldsHtml += '</div>';
         }
         
-        fetch('/classes/api/swagger-import', {
+        fieldsPreview.innerHTML = fieldsHtml || '<em>No fields found</em>';
+
+        currentImportStep = 3;
+        document.querySelectorAll('.import-step').forEach(step => step.classList.add('d-none'));
+        document.getElementById('step3').classList.remove('d-none');
+        updateImportButtons();
+    }
+
+    function performImport() {
+        const className = document.getElementById('importClassName').value.trim();
+        const cleanupExisting = document.getElementById('cleanupExisting').checked;
+
+        if (!className || !parsedSwaggerData) {
+            alert('Missing required data for import');
+            return;
+        }
+
+        const importData = {
+            class_name: className,
+            cleanup_existing: cleanupExisting,
+            swagger_data: parsedSwaggerData
+        };
+
+        fetch('{{ url_for("classes.import_swagger") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(requestData)
+            body: JSON.stringify(importData)
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 swaggerImportModal.hide();
                 loadClasses();
-                alert('Swagger import completed successfully!');
+                alert(`Import successful!\nCreated: ${data.stats.classes_created} field classes, ${data.stats.fields_created} fields`);
             } else {
-                alert('Import failed: ' + (data.errors || []).join(', '));
+                alert('Import failed: ' + data.message);
             }
         })
         .catch(error => {
-            alert('Error: ' + error.message);
+            console.error('Error:', error);
+            alert('Import failed due to an error');
         });
     }
 
-    function displaySwaggerPreview(data) {
-        const previewDiv = document.getElementById('swaggerPreview');
-        const summaryDiv = document.getElementById('previewSummary');
-        const detailsDiv = document.getElementById('previewDetails');
+    // Bulk Delete Functions
+    function toggleAllClasses(selectAllCheckbox) {
+        const checkboxes = document.querySelectorAll('.class-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = selectAllCheckbox.checked;
+        });
+        updateBulkDeleteButton();
+    }
+
+    function updateBulkDeleteButton() {
+        const selectedCheckboxes = document.querySelectorAll('.class-checkbox:checked');
+        const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+        const selectAllCheckbox = document.getElementById('selectAllClasses');
         
-        if (data.success) {
-            const summary = data.summary;
-            summaryDiv.innerHTML = `
-                <strong>Changes Preview:</strong><br>
-                Field Classes to Insert: ${summary.field_classes_to_insert}<br>
-                Field Classes to Update: ${summary.field_classes_to_update}<br>
-                Field Classes to Delete: ${summary.field_classes_to_delete}<br>
-                Total Fields: ${summary.total_fields}
-            `;
-            
-            let detailsHtml = '';
-            
-            if (data.operations.field_classes.insert.length > 0) {
-                detailsHtml += '<h6 class="text-success">Classes to Insert:</h6><ul>';
-                data.operations.field_classes.insert.forEach(cls => {
-                    detailsHtml += `<li>${cls.name} (${cls.type}) - ${cls.fields.length} fields</li>`;
-                });
-                detailsHtml += '</ul>';
-            }
-            
-            if (data.operations.field_classes.update.length > 0) {
-                detailsHtml += '<h6 class="text-warning">Classes to Update:</h6><ul>';
-                data.operations.field_classes.update.forEach(cls => {
-                    detailsHtml += `<li>${cls.name} (${cls.type})</li>`;
-                });
-                detailsHtml += '</ul>';
-            }
-            
-            if (data.operations.field_classes.delete.length > 0) {
-                detailsHtml += '<h6 class="text-danger">Classes to Delete:</h6><ul>';
-                data.operations.field_classes.delete.forEach(cls => {
-                    detailsHtml += `<li>${cls.name}</li>`;
-                });
-                detailsHtml += '</ul>';
-            }
-            
-            detailsDiv.innerHTML = detailsHtml;
+        if (selectedCheckboxes.length > 0) {
+            bulkDeleteBtn.style.display = 'inline-block';
+            bulkDeleteBtn.textContent = `Delete Selected (${selectedCheckboxes.length})`;
         } else {
-            summaryDiv.innerHTML = '<strong class="text-danger">Import Failed:</strong><br>' + (data.errors || []).join('<br>');
-            detailsDiv.innerHTML = '';
+            bulkDeleteBtn.style.display = 'none';
         }
+
+        // Update select all checkbox state
+        const allCheckboxes = document.querySelectorAll('.class-checkbox');
+        if (selectedCheckboxes.length === allCheckboxes.length) {
+            selectAllCheckbox.checked = true;
+            selectAllCheckbox.indeterminate = false;
+        } else if (selectedCheckboxes.length > 0) {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = true;
+        } else {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+        }
+    }
+
+    function bulkDeleteClasses() {
+        const selectedCheckboxes = document.querySelectorAll('.class-checkbox:checked');
+        if (selectedCheckboxes.length === 0) {
+            alert('Please select classes to delete');
+            return;
+        }
+
+        const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+        const confirmMessage = `Are you sure you want to delete ${selectedIds.length} selected class(es)? This action cannot be undone.`;
         
-        previewDiv.style.display = 'block';
+        if (confirm(confirmMessage)) {
+            fetch('{{ url_for("classes.bulk_delete_classes") }}', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    class_ids: selectedIds
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadClasses();
+                    document.getElementById('selectAllClasses').checked = false;
+                    updateBulkDeleteButton();
+                    alert(`Successfully deleted ${data.deleted_count} class(es). ${data.skipped_count > 0 ? data.skipped_count + ' classes were skipped due to dependencies.' : ''}`);
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error during bulk delete operation');
+            });
+        }
     }
 </script>
 {% endblock %}

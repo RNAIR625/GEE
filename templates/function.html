@@ -185,13 +185,18 @@
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">All Functions</h5>
-                    <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-sm btn-outline-secondary active" id="tableViewBtn">
-                            <i class="fas fa-list me-1"></i> Table View
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-danger btn-sm" id="bulkDeleteFunctionsBtn" onclick="bulkDeleteFunctions()" style="display: none;">
+                            <i class="fas fa-trash me-2"></i>Delete Selected
                         </button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" id="cardViewBtn">
-                            <i class="fas fa-th-large me-1"></i> Card View
-                        </button>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-outline-secondary active" id="tableViewBtn">
+                                <i class="fas fa-list me-1"></i> Table View
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="cardViewBtn">
+                                <i class="fas fa-th-large me-1"></i> Card View
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body">
@@ -199,6 +204,9 @@
                         <table class="table table-hover">
                             <thead>
                                 <tr>
+                                    <th width="40">
+                                        <input type="checkbox" id="selectAllFunctions" onchange="toggleAllFunctions(this)">
+                                    </th>
                                     <th>Function Name</th>
                                     <th>Parameters</th>
                                     <th>Actions</th>
@@ -461,7 +469,7 @@
         if (allFunctions.length === 0) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="3" class="text-center py-4">
+                    <td colspan="4" class="text-center py-4">
                         <div class="text-muted">
                             <i class="fas fa-info-circle me-2"></i>
                             No functions found. Create your first function to get started.
@@ -490,6 +498,9 @@
             // Table row
             const row = `
                 <tr data-id="${func.GBF_ID}" class="function-item ${currentFunctionId === func.GBF_ID ? 'selected-function' : ''}">
+                    <td>
+                        <input type="checkbox" class="function-checkbox" value="${func.GBF_ID}" onchange="updateBulkDeleteFunctionsButton()">
+                    </td>
                     <td>
                         <a href="javascript:void(0)" onclick="viewParameters(${func.GBF_ID}, '${func.FUNC_NAME}')" class="text-decoration-none text-dark">
                             <div><strong>${func.FUNC_NAME}</strong></div>
@@ -934,6 +945,79 @@
                 toastEl.style.display = 'none';
                 document.body.removeChild(toastEl);
             }, 3000);
+        }
+    }
+
+    // Bulk Delete Functions for Functions
+    function toggleAllFunctions(selectAllCheckbox) {
+        const checkboxes = document.querySelectorAll('.function-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = selectAllCheckbox.checked;
+        });
+        updateBulkDeleteFunctionsButton();
+    }
+
+    function updateBulkDeleteFunctionsButton() {
+        const selectedCheckboxes = document.querySelectorAll('.function-checkbox:checked');
+        const bulkDeleteBtn = document.getElementById('bulkDeleteFunctionsBtn');
+        const selectAllCheckbox = document.getElementById('selectAllFunctions');
+        
+        if (selectedCheckboxes.length > 0) {
+            bulkDeleteBtn.style.display = 'inline-block';
+            bulkDeleteBtn.innerHTML = `<i class="fas fa-trash me-2"></i>Delete Selected (${selectedCheckboxes.length})`;
+        } else {
+            bulkDeleteBtn.style.display = 'none';
+        }
+
+        // Update select all checkbox state
+        const allCheckboxes = document.querySelectorAll('.function-checkbox');
+        if (selectedCheckboxes.length === allCheckboxes.length) {
+            selectAllCheckbox.checked = true;
+            selectAllCheckbox.indeterminate = false;
+        } else if (selectedCheckboxes.length > 0) {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = true;
+        } else {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+        }
+    }
+
+    function bulkDeleteFunctions() {
+        const selectedCheckboxes = document.querySelectorAll('.function-checkbox:checked');
+        if (selectedCheckboxes.length === 0) {
+            alert('Please select functions to delete');
+            return;
+        }
+
+        const selectedIds = Array.from(selectedCheckboxes).map(cb => parseInt(cb.value));
+        const confirmMessage = `Are you sure you want to delete ${selectedIds.length} selected function(s)? This will also delete all associated parameters. This action cannot be undone.`;
+        
+        if (confirm(confirmMessage)) {
+            // Mock bulk delete success
+            let deletedCount = 0;
+            
+            selectedIds.forEach(functionId => {
+                // Remove from local data
+                allFunctions = allFunctions.filter(f => f.GBF_ID !== functionId);
+                
+                // Remove parameters
+                delete functionParameters[functionId];
+                
+                // If we're deleting the currently selected function, reset parameter section
+                if (currentFunctionId === functionId) {
+                    resetParameterSection();
+                }
+                
+                deletedCount++;
+            });
+            
+            updateFunctionsList();
+            updateSummaryData();
+            document.getElementById('selectAllFunctions').checked = false;
+            updateBulkDeleteFunctionsButton();
+            
+            showToast('Success', `Successfully deleted ${deletedCount} function(s) and their parameters.`);
         }
     }
 </script>

@@ -7,9 +7,14 @@
     <div class="card">
         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Rules</h5>
-            <button class="btn btn-light" onclick="openNewRuleModal()">
-                <i class="fas fa-plus me-1"></i>Add Rule
-            </button>
+            <div>
+                <button class="btn btn-danger me-2" id="bulkDeleteRulesBtn" onclick="bulkDeleteRules()" style="display: none;">
+                    <i class="fas fa-trash me-2"></i>Delete Selected
+                </button>
+                <button class="btn btn-light" onclick="openNewRuleModal()">
+                    <i class="fas fa-plus me-1"></i>Add Rule
+                </button>
+            </div>
         </div>
         <div class="card-body">
             <!-- Search & Filter Controls -->
@@ -46,6 +51,9 @@
                 <table class="table table-striped table-hover">
                     <thead>
                         <tr>
+                            <th width="40">
+                                <input type="checkbox" id="selectAllRules" onchange="toggleAllRules(this)">
+                            </th>
                             <th>Rule Name</th>
                             <th>Class</th>
                             <th>Type</th>

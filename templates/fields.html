@@ -16,14 +16,11 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h4 class="card-title mb-0">Fields Management</h4>
             <div>
-                <button class="btn btn-info me-2" onclick="openFieldMappingModal()">
-                    <i class="fas fa-map me-2"></i>Field Mapping
-                </button>
-                <button class="btn btn-success me-2" onclick="openSwaggerImportModal()">
-                    <i class="fas fa-file-import me-2"></i>Import Swagger
+                <button class="btn btn-danger me-2" id="bulkDeleteFieldsBtn" onclick="bulkDeleteFields()" style="display: none;">
+                    <i class="fas fa-trash me-2"></i>Delete Selected
                 </button>
                 <button class="btn btn-primary" onclick="openNewFieldModal()">
-                    <i class="fas fa-plus me-2"></i>New Field
+                    <i class="fas fa-plus me-2"></i>New
                 </button>
             </div>
         </div>
@@ -32,6 +29,9 @@
             <table class="table table-hover">
                 <thead>
                     <tr>
+                        <th width="40">
+                            <input type="checkbox" id="selectAllFields" onchange="toggleAllFields(this)">
+                        </th>
                         <th>Field Name</th>
                         <th>Type</th>
                         <th>Size</th>
@@ -123,113 +123,6 @@
         </div>
     </div>
 </div>
-
-<!-- Field Mapping Modal -->
-<div class="modal fade" id="fieldMappingModal" tabindex="-1">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Field Mapping & Testing</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6>Field Mapping Configuration</h6>
-                        <textarea class="form-control" id="fieldMappingConfig" rows="12" placeholder="Paste your field mapping JSON here..."></textarea>
-                        <div class="form-text">Define how request data maps to fields using JSONPath syntax</div>
-                    </div>
-                    <div class="col-md-6">
-                        <h6>Sample Request Data</h6>
-                        <textarea class="form-control" id="sampleRequestData" rows="12" placeholder="Paste sample request JSON here..."></textarea>
-                        <div class="form-text">Provide sample data to test your mapping</div>
-                    </div>
-                </div>
-                
-                <div class="mt-3">
-                    <button class="btn btn-info me-2" onclick="validateMapping()">Validate Mapping</button>
-                    <button class="btn btn-success" onclick="testMapping()">Test with Sample Data</button>
-                </div>
-                
-                <!-- Results -->
-                <div id="mappingResults" class="mt-4" style="display: none;">
-                    <h6>Results:</h6>
-                    <div class="alert" id="mappingResultAlert">
-                        <div id="mappingResultContent"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="loadMappingExample()">Load Example</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Swagger Import Modal -->
-<div class="modal fade" id="swaggerImportModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Import Swagger Definition</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="swaggerImportForm">
-                    <div class="mb-3">
-                        <label class="form-label">Swagger File</label>
-                        <input type="file" class="form-control" id="swaggerFile" accept=".json,.yaml,.yml" onchange="loadSwaggerFile()">
-                        <div class="form-text">Upload a Swagger/OpenAPI file in JSON or YAML format</div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Or Paste Content</label>
-                        <textarea class="form-control" id="swaggerContent" rows="8" placeholder="Paste your Swagger/OpenAPI definition here..."></textarea>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">File Type</label>
-                                <select class="form-control" id="swaggerFileType">
-                                    <option value="json">JSON</option>
-                                    <option value="yaml">YAML</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Sync Mode</label>
-                                <select class="form-control" id="swaggerSyncMode">
-                                    <option value="preview">Preview Changes</option>
-                                    <option value="execute">Execute Import</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Target Class (Optional)</label>
-                        <input type="text" class="form-control" id="targetClassName" placeholder="Leave empty to sync all classes">
-                        <div class="form-text">Specify a specific field class name to sync only that class</div>
-                    </div>
-                </form>
-                
-                <!-- Preview Results -->
-                <div id="swaggerPreview" class="mt-4" style="display: none;">
-                    <h6>Preview Results:</h6>
-                    <div class="alert alert-info">
-                        <div id="previewSummary"></div>
-                    </div>
-                    <div id="previewDetails"></div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-info" onclick="previewSwaggerImport()">Preview</button>
-                <button type="button" class="btn btn-success" onclick="executeSwaggerImport()">Import</button>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block scripts %}
@@ -237,8 +130,6 @@
     let currentDeleteId = null;
     const fieldModal = new bootstrap.Modal(document.getElementById('fieldModal'));
     const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-    const fieldMappingModal = new bootstrap.Modal(document.getElementById('fieldMappingModal'));
-    const swaggerImportModal = new bootstrap.Modal(document.getElementById('swaggerImportModal'));
 
     // Load fields and classes when page loads
     document.addEventListener('DOMContentLoaded', function() {
@@ -268,6 +159,9 @@
                 data.forEach(field => {
                     const row = `
                         <tr>
+                            <td>
+                                <input type="checkbox" class="field-checkbox" value="${field.GF_ID}" onchange="updateBulkDeleteFieldsButton()">
+                            </td>
                             <td>${field.GF_NAME}</td>
                             <td>${field.GF_TYPE}</td>
                             <td>${field.GF_SIZE || ''}</td>
@@ -372,286 +266,77 @@
         });
     }
 
-    function openFieldMappingModal() {
-        document.getElementById('fieldMappingConfig').value = '';
-        document.getElementById('sampleRequestData').value = '';
-        document.getElementById('mappingResults').style.display = 'none';
-        fieldMappingModal.show();
+    // Bulk Delete Functions for Fields
+    function toggleAllFields(selectAllCheckbox) {
+        const checkboxes = document.querySelectorAll('.field-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = selectAllCheckbox.checked;
+        });
+        updateBulkDeleteFieldsButton();
     }
 
-    function openSwaggerImportModal() {
-        document.getElementById('swaggerImportForm').reset();
-        document.getElementById('swaggerPreview').style.display = 'none';
-        swaggerImportModal.show();
-    }
-
-    function loadSwaggerFile() {
-        const fileInput = document.getElementById('swaggerFile');
-        const file = fileInput.files[0];
+    function updateBulkDeleteFieldsButton() {
+        const selectedCheckboxes = document.querySelectorAll('.field-checkbox:checked');
+        const bulkDeleteBtn = document.getElementById('bulkDeleteFieldsBtn');
+        const selectAllCheckbox = document.getElementById('selectAllFields');
         
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                document.getElementById('swaggerContent').value = e.target.result;
-                
-                // Auto-detect file type
-                const fileName = file.name.toLowerCase();
-                if (fileName.endsWith('.yaml') || fileName.endsWith('.yml')) {
-                    document.getElementById('swaggerFileType').value = 'yaml';
+        if (selectedCheckboxes.length > 0) {
+            bulkDeleteBtn.style.display = 'inline-block';
+            bulkDeleteBtn.innerHTML = `<i class="fas fa-trash me-2"></i>Delete Selected (${selectedCheckboxes.length})`;
+        } else {
+            bulkDeleteBtn.style.display = 'none';
+        }
+
+        // Update select all checkbox state
+        const allCheckboxes = document.querySelectorAll('.field-checkbox');
+        if (selectedCheckboxes.length === allCheckboxes.length) {
+            selectAllCheckbox.checked = true;
+            selectAllCheckbox.indeterminate = false;
+        } else if (selectedCheckboxes.length > 0) {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = true;
+        } else {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+        }
+    }
+
+    function bulkDeleteFields() {
+        const selectedCheckboxes = document.querySelectorAll('.field-checkbox:checked');
+        if (selectedCheckboxes.length === 0) {
+            alert('Please select fields to delete');
+            return;
+        }
+
+        const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+        const confirmMessage = `Are you sure you want to delete ${selectedIds.length} selected field(s)? This action cannot be undone.`;
+        
+        if (confirm(confirmMessage)) {
+            fetch('{{ url_for("fields.bulk_delete_fields") }}', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    field_ids: selectedIds
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadFields();
+                    document.getElementById('selectAllFields').checked = false;
+                    updateBulkDeleteFieldsButton();
+                    alert(`Successfully deleted ${data.deleted_count} field(s).`);
                 } else {
-                    document.getElementById('swaggerFileType').value = 'json';
+                    alert('Error: ' + data.message);
                 }
-            };
-            reader.readAsText(file);
-        }
-    }
-
-    function loadMappingExample() {
-        fetch('/fields/api/mapping-example')
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('fieldMappingConfig').value = JSON.stringify(data.example_mapping, null, 2);
-                document.getElementById('sampleRequestData').value = JSON.stringify(data.example_request, null, 2);
             })
             .catch(error => {
-                alert('Error loading example: ' + error.message);
+                console.error('Error:', error);
+                alert('Error during bulk delete operation');
             });
-    }
-
-    function validateMapping() {
-        const mappingConfig = document.getElementById('fieldMappingConfig').value;
-        
-        if (!mappingConfig.trim()) {
-            alert('Please provide field mapping configuration!');
-            return;
         }
-        
-        try {
-            const mapping = JSON.parse(mappingConfig);
-            
-            fetch('/fields/api/validate-mapping', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    field_mapping: mapping,
-                    sample_request: {}
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                displayMappingResults(data, 'validation');
-            })
-            .catch(error => {
-                alert('Error validating mapping: ' + error.message);
-            });
-        } catch (e) {
-            alert('Invalid JSON in mapping configuration: ' + e.message);
-        }
-    }
-
-    function testMapping() {
-        const mappingConfig = document.getElementById('fieldMappingConfig').value;
-        const sampleData = document.getElementById('sampleRequestData').value;
-        
-        if (!mappingConfig.trim()) {
-            alert('Please provide field mapping configuration!');
-            return;
-        }
-        
-        if (!sampleData.trim()) {
-            alert('Please provide sample request data!');
-            return;
-        }
-        
-        try {
-            const mapping = JSON.parse(mappingConfig);
-            const request = JSON.parse(sampleData);
-            
-            fetch('/fields/api/field-mapping', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    field_mapping: mapping,
-                    request_data: request
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                displayMappingResults(data, 'mapping');
-            })
-            .catch(error => {
-                alert('Error testing mapping: ' + error.message);
-            });
-        } catch (e) {
-            alert('Invalid JSON: ' + e.message);
-        }
-    }
-
-    function displayMappingResults(data, type) {
-        const resultsDiv = document.getElementById('mappingResults');
-        const alertDiv = document.getElementById('mappingResultAlert');
-        const contentDiv = document.getElementById('mappingResultContent');
-        
-        if (data.success || data.mapping_valid) {
-            alertDiv.className = 'alert alert-success';
-            
-            if (type === 'validation') {
-                contentDiv.innerHTML = `
-                    <strong>Validation Results:</strong><br>
-                    Mapping Valid: ${data.mapping_valid ? 'Yes' : 'No'}<br>
-                    ${data.validation_errors.length > 0 ? 'Errors: ' + data.validation_errors.join(', ') : 'No errors found'}
-                `;
-            } else {
-                contentDiv.innerHTML = `
-                    <strong>Mapping Results:</strong><br>
-                    Successful Mappings: ${data.mapping_summary.successful_mappings}<br>
-                    Failed Mappings: ${data.mapping_summary.failed_mappings}<br>
-                    <strong>Mapped Data:</strong><br>
-                    <pre>${JSON.stringify(data.mapped_data, null, 2)}</pre>
-                `;
-            }
-        } else {
-            alertDiv.className = 'alert alert-danger';
-            contentDiv.innerHTML = `
-                <strong>Error:</strong><br>
-                ${data.errors ? data.errors.join('<br>') : data.error || 'Unknown error'}
-            `;
-        }
-        
-        resultsDiv.style.display = 'block';
-    }
-
-    function previewSwaggerImport() {
-        const content = document.getElementById('swaggerContent').value;
-        const fileType = document.getElementById('swaggerFileType').value;
-        const targetClass = document.getElementById('targetClassName').value;
-        
-        if (!content.trim()) {
-            alert('Please provide Swagger content!');
-            return;
-        }
-        
-        const requestData = {
-            file_content: content,
-            file_type: fileType,
-            sync_mode: 'preview'
-        };
-        
-        if (targetClass.trim()) {
-            requestData.target_class_name = targetClass.trim();
-        }
-        
-        fetch('/classes/api/swagger-import', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestData)
-        })
-        .then(response => response.json())
-        .then(data => {
-            displaySwaggerPreview(data);
-        })
-        .catch(error => {
-            alert('Error: ' + error.message);
-        });
-    }
-
-    function executeSwaggerImport() {
-        const content = document.getElementById('swaggerContent').value;
-        const fileType = document.getElementById('swaggerFileType').value;
-        const targetClass = document.getElementById('targetClassName').value;
-        
-        if (!content.trim()) {
-            alert('Please provide Swagger content!');
-            return;
-        }
-        
-        const requestData = {
-            file_content: content,
-            file_type: fileType,
-            sync_mode: 'execute'
-        };
-        
-        if (targetClass.trim()) {
-            requestData.target_class_name = targetClass.trim();
-        }
-        
-        fetch('/classes/api/swagger-import', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestData)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                swaggerImportModal.hide();
-                loadFields();
-                loadFieldClasses();
-                alert('Swagger import completed successfully!');
-            } else {
-                alert('Import failed: ' + (data.errors || []).join(', '));
-            }
-        })
-        .catch(error => {
-            alert('Error: ' + error.message);
-        });
-    }
-
-    function displaySwaggerPreview(data) {
-        const previewDiv = document.getElementById('swaggerPreview');
-        const summaryDiv = document.getElementById('previewSummary');
-        const detailsDiv = document.getElementById('previewDetails');
-        
-        if (data.success) {
-            const summary = data.summary;
-            summaryDiv.innerHTML = `
-                <strong>Changes Preview:</strong><br>
-                Field Classes to Insert: ${summary.field_classes_to_insert}<br>
-                Field Classes to Update: ${summary.field_classes_to_update}<br>
-                Field Classes to Delete: ${summary.field_classes_to_delete}<br>
-                Total Fields: ${summary.total_fields}
-            `;
-            
-            let detailsHtml = '';
-            
-            if (data.operations.field_classes.insert.length > 0) {
-                detailsHtml += '<h6 class="text-success">Classes to Insert:</h6><ul>';
-                data.operations.field_classes.insert.forEach(cls => {
-                    detailsHtml += `<li>${cls.name} (${cls.type}) - ${cls.fields.length} fields</li>`;
-                });
-                detailsHtml += '</ul>';
-            }
-            
-            if (data.operations.field_classes.update.length > 0) {
-                detailsHtml += '<h6 class="text-warning">Classes to Update:</h6><ul>';
-                data.operations.field_classes.update.forEach(cls => {
-                    detailsHtml += `<li>${cls.name} (${cls.type})</li>`;
-                });
-                detailsHtml += '</ul>';
-            }
-            
-            if (data.operations.field_classes.delete.length > 0) {
-                detailsHtml += '<h6 class="text-danger">Classes to Delete:</h6><ul>';
-                data.operations.field_classes.delete.forEach(cls => {
-                    detailsHtml += `<li>${cls.name}</li>`;
-                });
-                detailsHtml += '</ul>';
-            }
-            
-            detailsDiv.innerHTML = detailsHtml;
-        } else {
-            summaryDiv.innerHTML = '<strong class="text-danger">Import Failed:</strong><br>' + (data.errors || []).join('<br>');
-            detailsDiv.innerHTML = '';
-        }
-        
-        previewDiv.style.display = 'block';
     }
 </script>
 {% endblock %}
