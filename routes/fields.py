@@ -16,7 +16,13 @@ def get_field_classes():
 
 @fields_bp.route('/get_fields')
 def get_fields():
-    fields = query_db('SELECT * FROM GEE_FIELDS')
+    # Join with field classes to get class name
+    fields = query_db('''
+        SELECT f.*, fc.FIELD_CLASS_NAME, fc.CLASS_TYPE
+        FROM GEE_FIELDS f 
+        LEFT JOIN GEE_FIELD_CLASSES fc ON f.GFC_ID = fc.GFC_ID
+        ORDER BY fc.FIELD_CLASS_NAME, f.GF_NAME
+    ''')
     return jsonify([dict(field) for field in fields])
 
 @fields_bp.route('/get_fields_by_class/<int:class_id>')

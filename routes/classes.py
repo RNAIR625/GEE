@@ -202,7 +202,7 @@ def import_swagger():
                 # Delete the class
                 modify_db('DELETE FROM GEE_FIELD_CLASSES WHERE GFC_ID = ?', (existing_class['GFC_ID'],))
         
-        # Create main field class from API info
+        # Create main field class from API info (summary only - no fields)
         api_info = swagger_data.get('api_info', {})
         main_class_description = f"API: {api_info.get('title', 'Unknown')} - {api_info.get('description', '')}"
         
@@ -223,47 +223,14 @@ def import_swagger():
             )
             stats['classes_created'] += 1
         
-        # Add input fields
-        input_fields = swagger_data.get('input_fields', [])
-        for field in input_fields:
-            modify_db(
-                'INSERT INTO GEE_FIELDS (GFC_ID, GF_NAME, GF_TYPE, GF_SIZE, GF_PRECISION_SIZE, GF_DEFAULT_VALUE, GF_DESCRIPTION) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                (
-                    main_class_id,
-                    f"input_{field['name']}",
-                    field['type'],
-                    field.get('size'),
-                    field.get('precision'),
-                    field.get('default_value'),
-                    f"Input: {field.get('description', field['name'])}"
-                )
-            )
-            stats['fields_created'] += 1
-        
-        # Add output fields
-        output_fields = swagger_data.get('output_fields', [])
-        for field in output_fields:
-            modify_db(
-                'INSERT INTO GEE_FIELDS (GFC_ID, GF_NAME, GF_TYPE, GF_SIZE, GF_PRECISION_SIZE, GF_DEFAULT_VALUE, GF_DESCRIPTION) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                (
-                    main_class_id,
-                    f"output_{field['name']}",
-                    field['type'],
-                    field.get('size'),
-                    field.get('precision'),
-                    field.get('default_value'),
-                    f"Output: {field.get('description', field['name'])}"
-                )
-            )
-            stats['fields_created'] += 1
-        
-        # Create additional field classes for complex schemas if they don't exist
+        # Create schema-specific field classes (properly organized)
         field_classes = swagger_data.get('field_classes', [])
         for fc in field_classes:
-            # Skip if this is the main class we already created
-            if fc['name'] == class_name:
+            # Skip error schemas unless explicitly requested
+            if 'error' in fc['name'].lower() and fc['type'] == 'ERROR':
                 continue
                 
+            # Create class name with schema suffix
             fc_name = f"{class_name}_{fc['name']}"
             existing_fc = query_db(
                 'SELECT GFC_ID FROM GEE_FIELD_CLASSES WHERE FIELD_CLASS_NAME = ?', 
@@ -278,13 +245,13 @@ def import_swagger():
                 )
                 stats['classes_created'] += 1
                 
-                # Add fields for this class
+                # Add fields for this specific schema class only
                 for field in fc['fields']:
                     modify_db(
                         'INSERT INTO GEE_FIELDS (GFC_ID, GF_NAME, GF_TYPE, GF_SIZE, GF_PRECISION_SIZE, GF_DEFAULT_VALUE, GF_DESCRIPTION) VALUES (?, ?, ?, ?, ?, ?, ?)',
                         (
                             fc_id,
-                            field['name'],
+                            field['name'],  # Use original field name, not prefixed
                             field['type'],
                             field.get('size'),
                             field.get('precision'),

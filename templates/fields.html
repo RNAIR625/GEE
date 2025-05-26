@@ -25,6 +25,40 @@
             </div>
         </div>
         
+        <!-- Filter Controls -->
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="searchFields" placeholder="Search fields..." onkeyup="filterFields()">
+                    <button class="btn btn-outline-secondary" type="button" onclick="filterFields()">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" id="filterFieldClass" onchange="filterFields()">
+                    <option value="">All Classes</option>
+                    <!-- Classes will be loaded here -->
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" id="filterFieldType" onchange="filterFields()">
+                    <option value="">All Types</option>
+                    <option value="VARCHAR">VARCHAR</option>
+                    <option value="INTEGER">INTEGER</option>
+                    <option value="DECIMAL">DECIMAL</option>
+                    <option value="DATE">DATE</option>
+                    <option value="DATETIME">DATETIME</option>
+                    <option value="BOOLEAN">BOOLEAN</option>
+                    <option value="TEXT">TEXT</option>
+                    <option value="JSON">JSON</option>
+                </select>
+            </div>
+            <div class="col-md-2 text-end">
+                <span class="badge bg-primary" id="fieldCount">0 fields</span>
+            </div>
+        </div>
+        
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead>
@@ -33,6 +67,7 @@
                             <input type="checkbox" id="selectAllFields" onchange="toggleAllFields(this)">
                         </th>
                         <th>Field Name</th>
+                        <th>Class</th>
                         <th>Type</th>
                         <th>Size</th>
                         <th>Precision</th>
@@ -135,6 +170,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         loadFields();
         loadFieldClasses();
+        loadFilterClasses();
     });
 
     function loadFieldClasses() {
@@ -149,38 +185,64 @@
             });
     }
 
+    function loadFilterClasses() {
+        fetch('{{ url_for("fields.get_field_classes") }}')
+            .then(response => response.json())
+            .then(data => {
+                const select = document.getElementById('filterFieldClass');
+                select.innerHTML = '<option value="">All Classes</option>';
+                data.forEach(cls => {
+                    select.innerHTML += `<option value="${cls.GFC_ID}">${cls.FIELD_CLASS_NAME}</option>`;
+                });
+            });
+    }
+
+    let allFields = []; // Store all fields for filtering
+
     function loadFields() {
         fetch('{{ url_for("fields.get_fields") }}')
             .then(response => response.json())
             .then(data => {
-                const tableBody = document.getElementById('fieldTableBody');
-                tableBody.innerHTML = '';
-                
-                data.forEach(field => {
-                    const row = `
-                        <tr>
-                            <td>
-                                <input type="checkbox" class="field-checkbox" value="${field.GF_ID}" onchange="updateBulkDeleteFieldsButton()">
-                            </td>
-                            <td>${field.GF_NAME}</td>
-                            <td>${field.GF_TYPE}</td>
-                            <td>${field.GF_SIZE || ''}</td>
-                            <td>${field.GF_PRECISION_SIZE || ''}</td>
-                            <td>${field.GF_DEFAULT_VALUE || ''}</td>
-                            <td>${field.GF_DESCRIPTION || ''}</td>
-                            <td class="action-buttons">
-                                <button class="btn btn-warning btn-sm" onclick="editField(${JSON.stringify(field).replace(/"/g, '&quot;')})">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-danger btn-sm" onclick="deleteField(${field.GF_ID})">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                    tableBody.innerHTML += row;
-                });
+                allFields = data; // Store for filtering
+                renderFields(data);
             });
+    }
+
+    function renderFields(fields) {
+        const tableBody = document.getElementById('fieldTableBody');
+        tableBody.innerHTML = '';
+        
+        fields.forEach(field => {
+            const className = field.FIELD_CLASS_NAME || 'No Class';
+            const row = `
+                <tr>
+                    <td>
+                        <input type="checkbox" class="field-checkbox" value="${field.GF_ID}" onchange="updateBulkDeleteFieldsButton()">
+                    </td>
+                    <td>${field.GF_NAME}</td>
+                    <td>
+                        <span class="badge bg-secondary">${className}</span>
+                    </td>
+                    <td>${field.GF_TYPE}</td>
+                    <td>${field.GF_SIZE || ''}</td>
+                    <td>${field.GF_PRECISION_SIZE || ''}</td>
+                    <td>${field.GF_DEFAULT_VALUE || ''}</td>
+                    <td>${field.GF_DESCRIPTION || ''}</td>
+                    <td class="action-buttons">
+                        <button class="btn btn-warning btn-sm" onclick="editField(${JSON.stringify(field).replace(/"/g, '&quot;')})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteField(${field.GF_ID})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+            tableBody.innerHTML += row;
+        });
+
+        // Update field count
+        document.getElementById('fieldCount').textContent = `${fields.length} fields`;
     }
 
     function openNewFieldModal() {
@@ -241,6 +303,41 @@
                 alert('Error: ' + result.message);
             }
         });
+    }
+
+    function filterFields() {
+        const searchTerm = document.getElementById('searchFields').value.toLowerCase();
+        const classFilter = document.getElementById('filterFieldClass').value;
+        const typeFilter = document.getElementById('filterFieldType').value;
+        
+        let filteredFields = allFields;
+        
+        // Apply search filter
+        if (searchTerm) {
+            filteredFields = filteredFields.filter(field => 
+                field.GF_NAME.toLowerCase().includes(searchTerm) || 
+                (field.GF_DESCRIPTION && field.GF_DESCRIPTION.toLowerCase().includes(searchTerm)) ||
+                (field.FIELD_CLASS_NAME && field.FIELD_CLASS_NAME.toLowerCase().includes(searchTerm))
+            );
+        }
+        
+        // Apply class filter
+        if (classFilter) {
+            filteredFields = filteredFields.filter(field => 
+                field.GFC_ID && field.GFC_ID.toString() === classFilter
+            );
+        }
+        
+        // Apply type filter
+        if (typeFilter) {
+            filteredFields = filteredFields.filter(field => field.GF_TYPE === typeFilter);
+        }
+        
+        renderFields(filteredFields);
+        
+        // Reset checkbox states after filtering
+        document.getElementById('selectAllFields').checked = false;
+        updateBulkDeleteFieldsButton();
     }
 
     function deleteField(gfId) {
