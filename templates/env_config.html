@@ -31,6 +31,11 @@
     color: white;
 }
 
+.db-type-MySQL {
+    background-color: #f39c12;
+    color: white;
+}
+
 .connection-badge {
     padding: 3px 8px;
     border-radius: 12px;
@@ -112,6 +117,7 @@
                                 <option value="SQLite">SQLite</option>
                                 <option value="Oracle">Oracle</option>
                                 <option value="Postgres">PostgreSQL</option>
+                                <option value="MySQL">MySQL</option>
                             </select>
                         </div>
                     </div>
@@ -194,6 +200,7 @@
                                 <option value="SQLite">SQLite</option>
                                 <option value="Oracle">Oracle</option>
                                 <option value="Postgres">PostgreSQL</option>
+                                <option value="MySQL">MySQL</option>
                             </select>
                         </div>
                     </div>
@@ -202,24 +209,53 @@
                         <div class="col-md-6">
                             <label class="form-label required-field">Database Name</label>
                             <input type="text" class="form-control" id="dbName" required>
+                            <small class="form-text text-muted" id="dbNameHelp">Database name or SID</small>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Database Instance</label>
-                            <input type="text" class="form-control" id="dbInstance">
+                        <div class="col-md-6" id="usernameField">
+                            <label class="form-label required-field">Username</label>
+                            <input type="text" class="form-control" id="dbUsername" required>
                         </div>
                     </div>
-                    
+
+                    <div class="row mb-3">
+                        <div class="col-md-6" id="hostField">
+                            <label class="form-label required-field">Host/Server</label>
+                            <input type="text" class="form-control" id="dbHost" required>
+                        </div>
+                        <div class="col-md-6" id="portField">
+                            <label class="form-label required-field">Port</label>
+                            <input type="number" class="form-control" id="dbPort" required>
+                        </div>
+                    </div>
+
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label class="form-label">Database Password</label>
+                            <label class="form-label">Password</label>
                             <div class="password-field">
                                 <input type="password" class="form-control" id="dbPassword">
                                 <i class="fas fa-eye toggle-password" onclick="togglePasswordVisibility('dbPassword')"></i>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Port</label>
-                            <input type="number" class="form-control" id="dbPort">
+                        <div class="col-md-6" id="serviceField">
+                            <label class="form-label">Service Name/Instance</label>
+                            <input type="text" class="form-control" id="dbInstance">
+                            <small class="form-text text-muted" id="serviceHelp">Service name for Oracle, database name for PostgreSQL</small>
+                        </div>
+                    </div>
+
+                    <!-- Oracle Connection Type Selection -->
+                    <div class="row mb-3" id="oracleConnectionType" style="display: none;">
+                        <div class="col-md-12">
+                            <label class="form-label">Oracle Connection Type</label>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="oracleConnType" id="useServiceName" value="service" checked onchange="toggleOracleFields()">
+                                <label class="form-check-label" for="useServiceName">Service Name</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="oracleConnType" id="useSid" value="sid" onchange="toggleOracleFields()">
+                                <label class="form-check-label" for="useSid">SID</label>
+                            </div>
+                            <small class="form-text text-muted">Choose Service Name for most Oracle connections, or SID for legacy configurations</small>
                         </div>
                     </div>
                     
@@ -361,19 +397,94 @@
     // Toggle database fields based on selected type
     function toggleDatabaseFields() {
         const dbType = document.getElementById('dbType').value;
-        const dbInstanceField = document.getElementById('dbInstance');
-        const dbPortField = document.getElementById('dbPort');
+        const usernameField = document.getElementById('usernameField');
+        const hostField = document.getElementById('hostField');
+        const portField = document.getElementById('portField');
+        const serviceField = document.getElementById('serviceField');
+        const oracleConnectionType = document.getElementById('oracleConnectionType');
+        const dbNameHelp = document.getElementById('dbNameHelp');
+        const serviceHelp = document.getElementById('serviceHelp');
         
-        if (dbType === 'SQLite') {
-            dbInstanceField.disabled = true;
-            dbInstanceField.required = false;
-            dbPortField.disabled = true;
-            dbPortField.required = false;
-        } else {
-            dbInstanceField.disabled = false;
-            dbInstanceField.required = true;
-            dbPortField.disabled = false;
-            dbPortField.required = true;
+        // Reset all fields
+        const fieldsToToggle = [usernameField, hostField, portField, serviceField];
+        fieldsToToggle.forEach(field => {
+            if (field) {
+                field.style.display = 'block';
+                const input = field.querySelector('input');
+                if (input) {
+                    input.required = false;
+                    input.disabled = false;
+                }
+            }
+        });
+        
+        // Hide Oracle connection type by default
+        if (oracleConnectionType) {
+            oracleConnectionType.style.display = 'none';
+        }
+        
+        switch(dbType) {
+            case 'SQLite':
+                // Hide network fields for SQLite
+                hostField.style.display = 'none';
+                portField.style.display = 'none';
+                usernameField.style.display = 'none';
+                serviceField.style.display = 'none';
+                dbNameHelp.textContent = 'Path to SQLite database file (absolute or relative)';
+                break;
+                
+            case 'Oracle':
+                // Show all fields, set appropriate labels
+                usernameField.querySelector('input').required = true;
+                hostField.querySelector('input').required = true;
+                portField.querySelector('input').required = true;
+                document.getElementById('dbPort').value = '1521'; // Default Oracle port
+                oracleConnectionType.style.display = 'block'; // Show Oracle connection type selector
+                dbNameHelp.textContent = 'Database name or SID';
+                toggleOracleFields(); // Update Oracle-specific fields
+                break;
+                
+            case 'Postgres':
+                // Show all fields except service (use dbName for database)
+                usernameField.querySelector('input').required = true;
+                hostField.querySelector('input').required = true;
+                portField.querySelector('input').required = true;
+                document.getElementById('dbPort').value = '5432'; // Default PostgreSQL port
+                dbNameHelp.textContent = 'Database name';
+                serviceHelp.textContent = 'Leave empty for PostgreSQL';
+                break;
+                
+            case 'MySQL':
+                // Show all fields for MySQL
+                usernameField.querySelector('input').required = true;
+                hostField.querySelector('input').required = true;
+                portField.querySelector('input').required = true;
+                document.getElementById('dbPort').value = '3306'; // Default MySQL port
+                dbNameHelp.textContent = 'Database/Schema name';
+                serviceHelp.textContent = 'Leave empty for MySQL (not required)';
+                break;
+                
+            default:
+                // Clear help text for unknown types
+                if (dbNameHelp) dbNameHelp.textContent = 'Database name';
+                if (serviceHelp) serviceHelp.textContent = 'Service name or instance';
+                break;
+        }
+    }
+    
+    // Toggle Oracle-specific fields based on connection type
+    function toggleOracleFields() {
+        const serviceNameRadio = document.getElementById('useServiceName');
+        const sidRadio = document.getElementById('useSid');
+        const serviceHelp = document.getElementById('serviceHelp');
+        const dbNameHelp = document.getElementById('dbNameHelp');
+        
+        if (serviceNameRadio && serviceNameRadio.checked) {
+            serviceHelp.textContent = 'Oracle Service Name (e.g., ORCL, XE, XEPDB1)';
+            dbNameHelp.textContent = 'Database name (for connection identification)';
+        } else if (sidRadio && sidRadio.checked) {
+            serviceHelp.textContent = 'Oracle SID (System Identifier, e.g., ORCL, XE)';
+            dbNameHelp.textContent = 'Database name (for connection identification)';
         }
     }
     
@@ -399,6 +510,8 @@
         const envName = document.getElementById('envName').value;
         const dbType = document.getElementById('dbType').value;
         const dbName = document.getElementById('dbName').value;
+        const dbUsername = document.getElementById('dbUsername').value;
+        const dbHost = document.getElementById('dbHost').value;
         const dbInstance = document.getElementById('dbInstance').value;
         const dbPassword = document.getElementById('dbPassword').value;
         const dbPort = document.getElementById('dbPort').value;
@@ -411,10 +524,25 @@
             return;
         }
         
-        // For Oracle and Postgres, additional checks
-        if ((dbType === 'Oracle' || dbType === 'Postgres') && (!dbInstance || !dbPort)) {
-            showToast('Error', 'Database instance and port are required for Oracle and PostgreSQL', 'error');
-            return;
+        // Database type specific validation
+        if (dbType === 'SQLite') {
+            // SQLite only needs database name (file path)
+        } else if (dbType === 'Oracle' || dbType === 'Postgres' || dbType === 'MySQL') {
+            // Network databases require username, host, and port
+            if (!dbUsername || !dbHost || !dbPort) {
+                showToast('Error', 'Username, host, and port are required for Oracle, PostgreSQL, and MySQL', 'error');
+                return;
+            }
+        }
+        
+        // Get Oracle connection type if Oracle is selected
+        let oracleConnType = 'service';
+        if (dbType === 'Oracle') {
+            const serviceNameRadio = document.getElementById('useServiceName');
+            const sidRadio = document.getElementById('useSid');
+            if (sidRadio && sidRadio.checked) {
+                oracleConnType = 'sid';
+            }
         }
         
         const data = {
@@ -422,9 +550,12 @@
             envName: envName,
             dbType: dbType,
             dbName: dbName,
+            dbUsername: dbUsername,
+            dbHost: dbHost,
             dbInstance: dbInstance,
             dbPassword: dbPassword,
             dbPort: dbPort,
+            oracleConnType: oracleConnType,
             linuxUser: linuxUser,
             linuxPassword: linuxPassword,
             linuxHost: linuxHost
@@ -536,6 +667,8 @@
         const envName = document.getElementById('envName').value;
         const dbType = document.getElementById('dbType').value;
         const dbName = document.getElementById('dbName').value;
+        const dbUsername = document.getElementById('dbUsername').value;
+        const dbHost = document.getElementById('dbHost').value;
         const dbInstance = document.getElementById('dbInstance').value;
         const dbPassword = document.getElementById('dbPassword').value;
         const dbPort = document.getElementById('dbPort').value;
@@ -553,6 +686,8 @@
             envName: envName,
             dbType: dbType,
             dbName: dbName,
+            dbUsername: dbUsername,
+            dbHost: dbHost,
             dbInstance: dbInstance,
             dbPassword: dbPassword,
             dbPort: dbPort,
@@ -599,6 +734,8 @@
             document.getElementById('envName').value = config.ENV_NAME;
             document.getElementById('dbType').value = config.DB_TYPE || '';
             document.getElementById('dbName').value = config.DB_NAME;
+            document.getElementById('dbUsername').value = config.DB_USERNAME || '';
+            document.getElementById('dbHost').value = config.DB_HOST || '';
             document.getElementById('dbInstance').value = config.DB_INSTANCE || '';
             document.getElementById('dbPassword').value = config.DB_PASSWORD || '';
             document.getElementById('dbPort').value = config.DB_PORT || '';
@@ -708,6 +845,10 @@
             .then(data => {
                 activeConnections = data;
                 renderActiveConnections(data);
+                // Re-render configs to update connection status in main table
+                if (allConfigs && allConfigs.length > 0) {
+                    renderConfigs(allConfigs);
+                }
             })
             .catch(error => {
                 console.error('Error loading active connections:', error);
@@ -718,6 +859,8 @@
     function renderConfigs(configs) {
         const tableBody = document.getElementById('configList');
         const noConfigsMessage = document.getElementById('noConfigsMessage');
+        
+        console.log('Rendering configs. Active connections count:', Object.keys(activeConnections).length);
         
         tableBody.innerHTML = '';
         
@@ -731,8 +874,17 @@
         configs.forEach(config => {
             const typeClass = `db-type-${config.DB_TYPE || 'Unknown'}`;
             
-            // Check if this config has an active connection
-            const isConnected = Object.values(activeConnections).some(conn => conn.config_id == config.GT_ID);
+            // Check if this config has an active connection - ensure type consistency
+            const configConnections = Object.values(activeConnections).filter(conn => {
+                const connConfigId = parseInt(conn.config_id);
+                const configGtId = parseInt(config.GT_ID);
+                return connConfigId === configGtId;
+            });
+            const isConnected = configConnections.length > 0;
+            
+            if (configConnections.length > 0) {
+                console.log(`✓ Config ${config.ENV_NAME} (ID: ${config.GT_ID}) - Connected via ${configConnections.length} handle(s)`);
+            }
             const connectionStatus = isConnected ? 
                 '<span class="connection-badge connection-active">Connected</span>' : 
                 '<span class="connection-badge connection-inactive">Not Connected</span>';
@@ -808,7 +960,7 @@
     
     // Get configuration name by ID
     function getConfigNameById(id) {
-        const config = allConfigs.find(c => c.GT_ID == id);
+        const config = allConfigs.find(c => parseInt(c.GT_ID) === parseInt(id));
         return config ? config.ENV_NAME : null;
     }
     
@@ -831,6 +983,8 @@
             envName: config.ENV_NAME,
             dbType: config.DB_TYPE,
             dbName: config.DB_NAME,
+            dbUsername: config.DB_USERNAME,
+            dbHost: config.DB_HOST,
             dbInstance: config.DB_INSTANCE,
             dbPassword: config.DB_PASSWORD,
             dbPort: config.DB_PORT,
