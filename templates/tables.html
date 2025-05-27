@@ -215,11 +215,30 @@
                 <form id="tableForm">
                     <input type="hidden" id="gecId">
                     <input type="hidden" id="currentConnection">
+                    <input type="hidden" id="selectedEnvironmentId">
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Environment <span class="text-danger">*</span></label>
+                            <select class="form-select" id="environmentSelect" onchange="loadTablesFromEnvironment()" required>
+                                <option value="">Select Environment...</option>
+                                <!-- Will be populated dynamically -->
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Available Tables</label>
+                            <select class="form-select" id="availableTablesSelect" onchange="selectTableFromList()">
+                                <option value="">Select a table...</option>
+                                <!-- Will be populated based on environment selection -->
+                            </select>
+                        </div>
+                    </div>
                     
                     <div class="row mb-3">
                         <div class="col-md-8">
                             <label class="form-label">Table Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="tableName" required>
+                            <input type="text" class="form-control" id="tableName" required readonly>
+                            <div class="form-text">Format: environment.database.table</div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Table Type <span class="text-danger">*</span></label>
@@ -337,5 +356,9 @@
 {% endblock %}
 
 {% block scripts %}
+<script>
+    // Initialize app_runtime_id for tables functionality
+    window.app_runtime_id = "{{ app_runtime_id }}";
+</script>
 <script src="{{ url_for('static', filename='js/tables.js') }}"></script>
 {% endblock %}

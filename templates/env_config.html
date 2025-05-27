@@ -131,6 +131,7 @@
                                     <th>Database Name</th>
                                     <th>Instance/Host</th>
                                     <th>Connection</th>
+                                    <th>Last Tested</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -558,7 +559,8 @@
             oracleConnType: oracleConnType,
             linuxUser: linuxUser,
             linuxPassword: linuxPassword,
-            linuxHost: linuxHost
+            linuxHost: linuxHost,
+            app_runtime_id: app_runtime_id
         };
         
         // Show testing status
@@ -592,9 +594,17 @@
                     </div>
                 `);
                 
-                // Show connection success modal
+                // Auto-refresh the config list to show updated connection status and last tested time
+                if (result.auto_stored) {
+                    loadConfigs();
+                    loadActiveConnections();
+                }
+                
+                // Show connection success modal (for manual storage option for temp configs)
                 document.getElementById('connectionHandle').textContent = result.handle;
-                connectionSuccessModal.show();
+                if (!result.auto_stored) {
+                    connectionSuccessModal.show();
+                }
             } else {
                 // Update connection status
                 updateConnectionStatus(`
@@ -681,6 +691,25 @@
             return;
         }
         
+        // Database type specific validation
+        if (dbType === 'Oracle' || dbType === 'Postgres' || dbType === 'MySQL') {
+            // Network databases require username, host, and port
+            if (!dbUsername || !dbHost || !dbPort) {
+                showToast('Error', 'Username, host, and port are required for Oracle, PostgreSQL, and MySQL', 'error');
+                return;
+            }
+        }
+        
+        // Get Oracle connection type if Oracle is selected
+        let oracleConnType = 'service';
+        if (dbType === 'Oracle') {
+            const serviceNameRadio = document.getElementById('useServiceName');
+            const sidRadio = document.getElementById('useSid');
+            if (sidRadio && sidRadio.checked) {
+                oracleConnType = 'sid';
+            }
+        }
+        
         const data = {
             gtId: gtId,
             envName: envName,
@@ -691,6 +720,7 @@
             dbInstance: dbInstance,
             dbPassword: dbPassword,
             dbPort: dbPort,
+            oracleConnType: oracleConnType,
             linuxUser: linuxUser,
             linuxPassword: linuxPassword,
             linuxHost: linuxHost
@@ -889,6 +919,11 @@
                 '<span class="connection-badge connection-active">Connected</span>' : 
                 '<span class="connection-badge connection-inactive">Not Connected</span>';
             
+            // Format last tested time
+            const lastTested = config.LAST_TESTED ? 
+                new Date(config.LAST_TESTED).toLocaleString() : 
+                '<span class="text-muted">Never</span>';
+            
             const row = `
                 <tr data-id="${config.GT_ID}">
                     <td class="fw-medium">${config.ENV_NAME}</td>
@@ -900,6 +935,7 @@
                     <td>${config.DB_NAME}</td>
                     <td>${config.DB_INSTANCE || '-'}</td>
                     <td>${connectionStatus}</td>
+                    <td><small>${lastTested}</small></td>
                     <td>
                         <div class="btn-group">
                             <button class="btn btn-info btn-sm" onclick="testConfigConnection(${config.GT_ID})">
@@ -990,7 +1026,8 @@
             dbPort: config.DB_PORT,
             linuxUser: config.LINUX_USER,
             linuxPassword: config.LINUX_PASSWORD,
-            linuxHost: config.LINUX_HOST
+            linuxHost: config.LINUX_HOST,
+            app_runtime_id: app_runtime_id
         };
         
         // Update status in connectionStatus panel
@@ -1030,9 +1067,17 @@
                     </div>
                 `);
                 
-                // Show connection success modal
+                // Auto-refresh the config list to show updated connection status and last tested time
+                if (result.auto_stored) {
+                    loadConfigs();
+                    loadActiveConnections();
+                }
+                
+                // Show connection success modal (for manual storage option for temp configs)
                 document.getElementById('connectionHandle').textContent = result.handle;
-                connectionSuccessModal.show();
+                if (!result.auto_stored) {
+                    connectionSuccessModal.show();
+                }
             } else {
                 // Update connection status
                 updateConnectionStatus(`

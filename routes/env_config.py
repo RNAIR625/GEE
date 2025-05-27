@@ -26,6 +26,64 @@ def generate_connection_handle(db_type, config_id, env_name):
         clean_name = env_name.lower().replace(' ', '_').replace('-', '_')[:15]
         return f"{db_type.lower()}_temp_{clean_name}_{hash_suffix}"
 
+def update_last_tested(config_id):
+    """Update the LAST_TESTED timestamp for a configuration"""
+    if config_id and config_id != 'temp':
+        try:
+            modify_db('UPDATE GEE_ENV_CONFIG SET LAST_TESTED = ? WHERE GT_ID = ?', 
+                     (datetime.now(), config_id))
+        except Exception as e:
+            print(f"Error updating last tested time: {str(e)}")
+
+def auto_store_connection_for_saved_config(handle, config_id, app_runtime_id):
+    """Automatically store connection for saved configurations"""
+    if config_id and config_id != 'temp':
+        try:
+            # Check if this exact handle already exists (globally)
+            existing = query_db('SELECT * FROM GEE_ACTIVE_CONNECTIONS WHERE HANDLE = ?', 
+                               (handle,), one=True)
+            
+            actual_handle = handle  # Track the actual handle used
+            
+            if existing:
+                # If it's the same app runtime, update it
+                if existing['APP_RUNTIME_ID'] == app_runtime_id:
+                    modify_db(
+                        'UPDATE GEE_ACTIVE_CONNECTIONS SET CONFIG_ID = ?, STATUS = ?, CREATED = ? WHERE HANDLE = ?',
+                        (config_id, 'active', datetime.now(), handle)
+                    )
+                else:
+                    # If different app runtime, create a unique handle by appending app runtime suffix
+                    unique_handle = f"{handle}_{app_runtime_id[:8]}"
+                    actual_handle = unique_handle
+                    
+                    # Check if this unique handle exists
+                    existing_unique = query_db('SELECT * FROM GEE_ACTIVE_CONNECTIONS WHERE HANDLE = ?', 
+                                             (unique_handle,), one=True)
+                    if existing_unique:
+                        # Update the existing unique handle
+                        modify_db(
+                            'UPDATE GEE_ACTIVE_CONNECTIONS SET CONFIG_ID = ?, STATUS = ?, CREATED = ? WHERE HANDLE = ?',
+                            (config_id, 'active', datetime.now(), unique_handle)
+                        )
+                    else:
+                        # Insert with unique handle
+                        modify_db(
+                            'INSERT INTO GEE_ACTIVE_CONNECTIONS (HANDLE, CONFIG_ID, CREATED, STATUS, APP_RUNTIME_ID) VALUES (?, ?, ?, ?, ?)',
+                            (unique_handle, config_id, datetime.now(), 'active', app_runtime_id)
+                        )
+            else:
+                # Handle doesn't exist, insert new connection
+                modify_db(
+                    'INSERT INTO GEE_ACTIVE_CONNECTIONS (HANDLE, CONFIG_ID, CREATED, STATUS, APP_RUNTIME_ID) VALUES (?, ?, ?, ?, ?)',
+                    (handle, config_id, datetime.now(), 'active', app_runtime_id)
+                )
+            return (True, actual_handle)
+        except Exception as e:
+            print(f"Error auto-storing connection: {str(e)}")
+            return (False, handle)
+    return (False, handle)
+
 # Environment Configuration Management
 @env_config_bp.route('/')
 def env_config_page():
@@ -48,9 +106,9 @@ def add_env_config():
     data = request.json
     try:
         modify_db(
-            'INSERT INTO GEE_ENV_CONFIG (ENV_NAME, DB_NAME, DB_USERNAME, DB_HOST, DB_PASSWORD, DB_INSTANCE, DB_TYPE, DB_PORT, LINUX_USER, LINUX_PASSWORD, LINUX_HOST) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO GEE_ENV_CONFIG (ENV_NAME, DB_NAME, DB_USERNAME, DB_HOST, DB_PASSWORD, DB_INSTANCE, DB_TYPE, DB_PORT, ORACLE_CONN_TYPE, LINUX_USER, LINUX_PASSWORD, LINUX_HOST) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             (data['envName'], data['dbName'], data.get('dbUsername'), data.get('dbHost'), data['dbPassword'], 
-             data['dbInstance'], data['dbType'], data['dbPort'], data['linuxUser'], data['linuxPassword'], data['linuxHost'])
+             data['dbInstance'], data['dbType'], data['dbPort'], data.get('oracleConnType', 'service'), data['linuxUser'], data['linuxPassword'], data['linuxHost'])
         )
         return jsonify({'success': True, 'message': 'Environment configuration added successfully!'})
     except Exception as e:
@@ -61,9 +119,9 @@ def update_env_config():
     data = request.json
     try:
         modify_db(
-            'UPDATE GEE_ENV_CONFIG SET ENV_NAME = ?, DB_NAME = ?, DB_USERNAME = ?, DB_HOST = ?, DB_PASSWORD = ?, DB_INSTANCE = ?, DB_TYPE = ?, DB_PORT = ?, LINUX_USER = ?, LINUX_PASSWORD = ?, LINUX_HOST = ? WHERE GT_ID = ?',
+            'UPDATE GEE_ENV_CONFIG SET ENV_NAME = ?, DB_NAME = ?, DB_USERNAME = ?, DB_HOST = ?, DB_PASSWORD = ?, DB_INSTANCE = ?, DB_TYPE = ?, DB_PORT = ?, ORACLE_CONN_TYPE = ?, LINUX_USER = ?, LINUX_PASSWORD = ?, LINUX_HOST = ? WHERE GT_ID = ?',
             (data['envName'], data['dbName'], data.get('dbUsername'), data.get('dbHost'), data['dbPassword'], 
-             data['dbInstance'], data['dbType'], data['dbPort'], data['linuxUser'], data['linuxPassword'], data['linuxHost'], data['gtId'])
+             data['dbInstance'], data['dbType'], data['dbPort'], data.get('oracleConnType', 'service'), data['linuxUser'], data['linuxPassword'], data['linuxHost'], data['gtId'])
         )
         return jsonify({'success': True, 'message': 'Environment configuration updated successfully!'})
     except Exception as e:
@@ -138,10 +196,24 @@ def test_connection():
                 conn.close()
                 
                 handle = generate_connection_handle('SQLite', data.get('gtId'), data['envName'])
+                
+                # Update last tested time and auto-store for saved configs
+                config_id = data.get('gtId')
+                update_last_tested(config_id)
+                
+                # Get app_runtime_id from the request session or generate one
+                app_runtime_id = request.args.get('app_runtime_id') or data.get('app_runtime_id', 'default')
+                auto_stored, actual_handle = auto_store_connection_for_saved_config(handle, config_id, app_runtime_id)
+                
+                message = f'SQLite connection successful! Version: {version}, Path: {db_path}'
+                if auto_stored:
+                    message += ' (Connection stored automatically)'
+                
                 return jsonify({
                     'success': True,
-                    'message': f'SQLite connection successful! Version: {version}, Path: {db_path}',
-                    'handle': handle
+                    'message': message,
+                    'handle': actual_handle,
+                    'auto_stored': auto_stored
                 })
                 
             except sqlite3.OperationalError as e:
@@ -203,10 +275,23 @@ def test_connection():
                 oracle_conn.close()
                 
                 handle = generate_connection_handle('Oracle', data.get('gtId'), data['envName'])
+                
+                # Update last tested time and auto-store for saved configs
+                config_id = data.get('gtId')
+                update_last_tested(config_id)
+                
+                app_runtime_id = data.get('app_runtime_id', 'default')
+                auto_stored, actual_handle = auto_store_connection_for_saved_config(handle, config_id, app_runtime_id)
+                
+                message = f'Oracle connection successful! Server date: {server_date}, Version: {version[:50]}...'
+                if auto_stored:
+                    message += ' (Connection stored automatically)'
+                
                 return jsonify({
                     'success': True,
-                    'message': f'Oracle connection successful! Server date: {server_date}, Version: {version[:50]}...',
-                    'handle': handle
+                    'message': message,
+                    'handle': actual_handle,
+                    'auto_stored': auto_stored
                 })
                 
             except Exception as e:
@@ -258,10 +343,23 @@ def test_connection():
                 conn.close()
                 
                 handle = generate_connection_handle('Postgres', data.get('gtId'), data['envName'])
+                
+                # Update last tested time and auto-store for saved configs
+                config_id = data.get('gtId')
+                update_last_tested(config_id)
+                
+                app_runtime_id = data.get('app_runtime_id', 'default')
+                auto_stored, actual_handle = auto_store_connection_for_saved_config(handle, config_id, app_runtime_id)
+                
+                message = f'PostgreSQL connection successful! Version: {version[:100]}...'
+                if auto_stored:
+                    message += ' (Connection stored automatically)'
+                
                 return jsonify({
                     'success': True,
-                    'message': f'PostgreSQL connection successful! Version: {version[:100]}...',
-                    'handle': handle
+                    'message': message,
+                    'handle': actual_handle,
+                    'auto_stored': auto_stored
                 })
                 
             except OperationalError as e:
@@ -309,10 +407,23 @@ def test_connection():
                 mysql_conn.close()
                 
                 handle = generate_connection_handle('MySQL', data.get('gtId'), data['envName'])
+                
+                # Update last tested time and auto-store for saved configs
+                config_id = data.get('gtId')
+                update_last_tested(config_id)
+                
+                app_runtime_id = data.get('app_runtime_id', 'default')
+                auto_stored, actual_handle = auto_store_connection_for_saved_config(handle, config_id, app_runtime_id)
+                
+                message = f'MySQL connection successful! Version: {version}, Database: {current_db}'
+                if auto_stored:
+                    message += ' (Connection stored automatically)'
+                
                 return jsonify({
                     'success': True,
-                    'message': f'MySQL connection successful! Version: {version}, Database: {current_db}',
-                    'handle': handle
+                    'message': message,
+                    'handle': actual_handle,
+                    'auto_stored': auto_stored
                 })
                 
             except Exception as e:
@@ -355,18 +466,39 @@ def store_connection():
         })
     
     try:
-        # First, check if this handle already exists for this app runtime
-        existing = query_db('SELECT * FROM GEE_ACTIVE_CONNECTIONS WHERE HANDLE = ? AND APP_RUNTIME_ID = ?', 
-                           (handle, app_runtime_id), one=True)
+        # Check if this exact handle already exists (globally)
+        existing = query_db('SELECT * FROM GEE_ACTIVE_CONNECTIONS WHERE HANDLE = ?', 
+                           (handle,), one=True)
         
         if existing:
-            # Update existing connection
-            modify_db(
-                'UPDATE GEE_ACTIVE_CONNECTIONS SET CONFIG_ID = ?, STATUS = ?, CREATED = ? WHERE HANDLE = ? AND APP_RUNTIME_ID = ?',
-                (config_id, 'active', datetime.now(), handle, app_runtime_id)
-            )
+            # If it's the same app runtime, update it
+            if existing['APP_RUNTIME_ID'] == app_runtime_id:
+                modify_db(
+                    'UPDATE GEE_ACTIVE_CONNECTIONS SET CONFIG_ID = ?, STATUS = ?, CREATED = ? WHERE HANDLE = ?',
+                    (config_id, 'active', datetime.now(), handle)
+                )
+            else:
+                # If different app runtime, create a unique handle by appending app runtime suffix
+                unique_handle = f"{handle}_{app_runtime_id[:8]}"
+                handle = unique_handle  # Update the handle variable for response
+                
+                # Check if this unique handle exists
+                existing_unique = query_db('SELECT * FROM GEE_ACTIVE_CONNECTIONS WHERE HANDLE = ?', 
+                                         (unique_handle,), one=True)
+                if existing_unique:
+                    # Update the existing unique handle
+                    modify_db(
+                        'UPDATE GEE_ACTIVE_CONNECTIONS SET CONFIG_ID = ?, STATUS = ?, CREATED = ? WHERE HANDLE = ?',
+                        (config_id, 'active', datetime.now(), unique_handle)
+                    )
+                else:
+                    # Insert with unique handle
+                    modify_db(
+                        'INSERT INTO GEE_ACTIVE_CONNECTIONS (HANDLE, CONFIG_ID, CREATED, STATUS, APP_RUNTIME_ID) VALUES (?, ?, ?, ?, ?)',
+                        (unique_handle, config_id, datetime.now(), 'active', app_runtime_id)
+                    )
         else:
-            # Insert new connection with APP_RUNTIME_ID
+            # Handle doesn't exist, insert new connection
             modify_db(
                 'INSERT INTO GEE_ACTIVE_CONNECTIONS (HANDLE, CONFIG_ID, CREATED, STATUS, APP_RUNTIME_ID) VALUES (?, ?, ?, ?, ?)',
                 (handle, config_id, datetime.now(), 'active', app_runtime_id)

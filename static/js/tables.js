@@ -6,6 +6,7 @@ let selectedTables = [];
 let currentDeleteId = null;
 let currentConnectionHandle = null;
 let connections = {};
+let app_runtime_id = null;
 
 // Bootstrap modal instances
 let tableModal;
@@ -13,6 +14,9 @@ let deleteModal;
 let importModal;
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize app_runtime_id from window
+    app_runtime_id = window.app_runtime_id;
+    
     // Initialize Bootstrap modals
     tableModal = new bootstrap.Modal(document.getElementById('tableModal'));
     deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
@@ -27,11 +31,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load tables and connections
     loadTables();
     loadConnections();
+    loadEnvironmentConfigs();
 });
 
 // Load active database connections
 function loadConnections() {
-    fetch('/tables/get_active_connections_for_tables')
+    if (!app_runtime_id) {
+        console.error('app_runtime_id not available');
+        return;
+    }
+    
+    fetch(`/tables/get_active_connections_for_tables?app_runtime_id=${app_runtime_id}`)
         .then(response => response.json())
         .then(data => {
             connections = data;
@@ -287,6 +297,99 @@ function updateImportButton() {
     }
 }
 
+// Load environment configurations
+function loadEnvironmentConfigs() {
+    fetch('/tables/get_environment_configs')
+        .then(response => response.json())
+        .then(data => {
+            const envSelect = document.getElementById('environmentSelect');
+            envSelect.innerHTML = '<option value="">Select Environment...</option>';
+            
+            data.forEach(env => {
+                envSelect.innerHTML += `<option value="${env.GT_ID}">${env.ENV_NAME} (${env.DB_TYPE})</option>`;
+            });
+        })
+        .catch(error => {
+            console.error('Error loading environment configs:', error);
+            showToast('Error', 'Failed to load environment configurations', 'error');
+        });
+}
+
+// Load tables from selected environment
+function loadTablesFromEnvironment() {
+    const envSelect = document.getElementById('environmentSelect');
+    const tablesSelect = document.getElementById('availableTablesSelect');
+    const tableNameInput = document.getElementById('tableName');
+    const selectedEnvironmentIdInput = document.getElementById('selectedEnvironmentId');
+    
+    // Clear previous selections
+    tablesSelect.innerHTML = '<option value="">Select a table...</option>';
+    tableNameInput.value = '';
+    
+    const envId = envSelect.value;
+    if (!envId) {
+        selectedEnvironmentIdInput.value = '';
+        return;
+    }
+    
+    // Store the selected environment ID for test query use
+    selectedEnvironmentIdInput.value = envId;
+    
+    // Show loading indicator
+    tablesSelect.innerHTML = '<option value="">Loading tables...</option>';
+    
+    fetch(`/tables/get_tables_from_environment?config_id=${envId}`)
+        .then(response => response.json())
+        .then(data => {
+            tablesSelect.innerHTML = '<option value="">Select a table...</option>';
+            
+            if (!data.success) {
+                tablesSelect.innerHTML = '<option value="">Error loading tables</option>';
+                showToast('Error', data.message || 'Failed to load tables', 'error');
+                return;
+            }
+            
+            const tables = data.tables || [];
+            if (tables.length === 0) {
+                tablesSelect.innerHTML = '<option value="">No tables found</option>';
+                return;
+            }
+            
+            tables.forEach(table => {
+                tablesSelect.innerHTML += `<option value="${JSON.stringify(table).replace(/"/g, '&quot;')}">${table.display_name}</option>`;
+            });
+        })
+        .catch(error => {
+            console.error('Error loading tables from environment:', error);
+            tablesSelect.innerHTML = '<option value="">Error loading tables</option>';
+            showToast('Error', 'Failed to load tables from environment', 'error');
+        });
+}
+
+// Select table from list
+function selectTableFromList() {
+    const tablesSelect = document.getElementById('availableTablesSelect');
+    const tableNameInput = document.getElementById('tableName');
+    const queryInput = document.getElementById('tableQuery');
+    
+    const selectedValue = tablesSelect.value;
+    if (!selectedValue) {
+        tableNameInput.value = '';
+        return;
+    }
+    
+    try {
+        const tableInfo = JSON.parse(selectedValue.replace(/&quot;/g, '"'));
+        tableNameInput.value = tableInfo.display_name;
+        
+        // Set a basic SELECT query for the table
+        queryInput.value = `SELECT * FROM ${tableInfo.actual_name}`;
+    } catch (error) {
+        console.error('Error parsing table selection:', error);
+        showToast('Error', 'Error selecting table', 'error');
+    }
+}
+
 // Open new table modal
 function openNewTableModal() {
     document.getElementById('modalTitle').textContent = 'Add New Table';
@@ -295,8 +398,13 @@ function openNewTableModal() {
     document.getElementById('currentConnection').value = '';
     document.getElementById('queryResults').classList.add('d-none');
     
+    // Reset environment and table selections
+    document.getElementById('environmentSelect').value = '';
+    document.getElementById('availableTablesSelect').innerHTML = '<option value="">Select a table...</option>';
+    document.getElementById('selectedEnvironmentId').value = '';
+    
     // Enable all form fields
-    document.getElementById('tableName').readOnly = false;
+    document.getElementById('tableName').readOnly = true; // Keep readonly until table is selected
     document.getElementById('tableType').disabled = false;
     document.getElementById('tableQuery').readOnly = false;
     document.getElementById('tableDescription').readOnly = false;
@@ -450,6 +558,7 @@ function saveTable() {
 function testQuery() {
     const query = document.getElementById('tableQuery').value;
     const connHandle = document.getElementById('currentConnection').value || currentConnectionHandle;
+    const selectedEnvironmentId = document.getElementById('selectedEnvironmentId').value;
     
     if (!query) {
         showToast('Warning', 'Please enter a query to test', 'warning');
@@ -470,6 +579,9 @@ function testQuery() {
     // Add connection handle if using external connection
     if (connHandle) {
         requestData.connection_handle = connHandle;
+    } else if (selectedEnvironmentId) {
+        // If no connection handle but we have a selected environment, use that
+        requestData.environment_config_id = selectedEnvironmentId;
     }
     
     // Show loading indicator

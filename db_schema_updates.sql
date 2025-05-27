@@ -7,6 +7,9 @@ ALTER TABLE GEE_ENV_CONFIG ADD COLUMN DB_USERNAME TEXT;
 -- Add DB_HOST column if it doesn't exist  
 ALTER TABLE GEE_ENV_CONFIG ADD COLUMN DB_HOST TEXT;
 
+-- Add LAST_TESTED column to track when connection was last tested
+ALTER TABLE GEE_ENV_CONFIG ADD COLUMN LAST_TESTED DATETIME;
+
 -- Update existing records to move DB_NAME to DB_USERNAME for Oracle connections
 -- This fixes the current issue where DB_NAME is used as username for Oracle
 UPDATE GEE_ENV_CONFIG 
