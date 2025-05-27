@@ -315,9 +315,6 @@ function renderRules(rules) {
         const updatedDate = new Date(rule.UPDATE_DATE).toLocaleString();
         
         row.innerHTML = `
-            <td>
-                <input type="checkbox" class="rule-checkbox" value="${rule.RULE_ID}" onchange="updateBulkDeleteRulesButton()">
-            </td>
             <td>${rule.RULE_NAME}</td>
             <td>${className}</td>
             <td><span class="badge rule-type-${rule.RULE_TYPE?.toLowerCase()}">${rule.RULE_TYPE || 'Standard'}</span></td>
@@ -788,55 +785,6 @@ function toggleRuleCreationMode() {
             generateCodeFromLines();
         }
     } else { // structured mode
-        // Check if code in editors is different from what would be generated
-        let generatedConditionCode = '';
-        if (currentRuleLines.conditions && currentRuleLines.conditions.length > 0) {
-            const sortedConditions = [...currentRuleLines.conditions].sort((a, b) => a.sequenceNum - b.sequenceNum);
-            generatedConditionCode = sortedConditions.map(line => {
-                const params = line.parameters.map(param => {
-                    if (param.fieldId && param.fieldName) return `fields.${param.fieldName}`;
-                    if (param.literalValue !== null && param.literalValue !== undefined) {
-                        if (param.fieldType === 'STRING' || typeof param.literalValue === 'string') return `'${param.literalValue.replace(/'/g, "\\'")}'`;
-                        return param.literalValue;
-                    }
-                    return 'null';
-                }).join(', ');
-                return `${line.functionName}(${params});`;
-            }).join('\n');
-        }
-
-        let generatedActionCode = '';
-        if (currentRuleLines.actions && currentRuleLines.actions.length > 0) {
-            const sortedActions = [...currentRuleLines.actions].sort((a, b) => a.sequenceNum - b.sequenceNum);
-            generatedActionCode = sortedActions.map(line => {
-                const params = line.parameters.map(param => {
-                    if (param.fieldId && param.fieldName) return `fields.${param.fieldName}`;
-                    if (param.literalValue !== null && param.literalValue !== undefined) {
-                         if (param.fieldType === 'STRING' || typeof param.literalValue === 'string') return `'${param.literalValue.replace(/'/g, "\\'")}'`;
-                        return param.literalValue;
-                    }
-                    return 'null';
-                }).join(', ');
-                return `${line.functionName}(${params});`;
-            }).join('\n');
-        }
-
-        const currentConditionCode = window.conditionEditor ? window.conditionEditor.getValue().trim() : '';
-        const currentActionCode = window.actionEditor ? window.actionEditor.getValue().trim() : '';
-
-        if (generatedConditionCode.trim() !== currentConditionCode || generatedActionCode.trim() !== currentActionCode) {
-            if (!confirm("Switching to Structured Mode will discard any manual changes made in the Code Editor and regenerate from existing structured lines. Are you sure you want to continue?")) {
-                document.getElementById('modeCodeEditor').checked = true; // Revert radio button
-                // The UI should remain in code editor mode, so no need to toggle classes here,
-                // as the radio button change might trigger this function again or the state is already correct.
-                // If the radio button change itself doesn't re-trigger toggleRuleCreationMode, 
-                // or to be absolutely sure the UI is in the correct state:
-                // document.getElementById('codeEditorMode').classList.remove('d-none');
-                // document.getElementById('structuredMode').classList.add('d-none');
-                return; // Abort the switch
-            }
-        }
-
         document.getElementById('codeEditorMode').classList.add('d-none');
         document.getElementById('structuredMode').classList.remove('d-none');
         
@@ -1152,8 +1100,8 @@ function editRuleLine(lineId, isCondition) {
     document.getElementById('ruleLineModalTitle').textContent = `Edit ${isCondition ? 'Condition' : 'Action'} Line`;
     
     // IMPORTANT FIX: Pass the existing parameters to the handleFunctionSelection function
-    handleFunctionSelection(line.parameters); // This was already correct as per the prompt.
-
+    handleFunctionSelection(line.parameters);
+    
     // Show the modal
     ruleLineModal.show();
 }
@@ -1177,7 +1125,7 @@ function handleFunctionSelection(existingParams = null) {
     }
     
     // Find the selected function
-    const func = allFunctions.find(f => f.GBF_ID == functionId);
+    const func = allFunctions.find(f => f.GBF_ID == functionId || f.FUNC_ID == functionId);
     
     if (!func) {
         console.error('Function not found with ID:', functionId);
@@ -1216,21 +1164,21 @@ function handleFunctionSelection(existingParams = null) {
             <div class="input-group">
                 <select class="form-select param-source" data-param-index="${i}" onchange="toggleParameterValueType(this)">
                     <option value="field" ${existingParam && existingParam.fieldId ? 'selected' : ''}>Field</option>
-                    <option value="literal" ${existingParam && existingParam.literalValue !== null && existingParam.literalValue !== undefined && (existingParam.fieldId === null || existingParam.fieldId === undefined) ? 'selected' : ''}>Literal Value</option>
+                    <option value="literal" ${existingParam && existingParam.literalValue !== undefined && existingParam.fieldId === null ? 'selected' : ''}>Literal Value</option>
                 </select>
                 <div class="field-selector ${existingParam && existingParam.fieldId ? '' : 'd-none'}">
                     <select class="form-select param-field" data-param-index="${i}">
                         <option value="">Select Field</option>
                         ${classFields.map(field => `
-                            <option value="${field.GF_ID}" ${existingParam && existingParam.fieldId && existingParam.fieldId == field.GF_ID ? 'selected' : ''}>
+                            <option value="${field.GF_ID}" ${existingParam && existingParam.fieldId == field.GF_ID ? 'selected' : ''}>
                                 ${field.GF_NAME}
                             </option>
                         `).join('')}
                     </select>
                 </div>
-                <div class="literal-value ${existingParam && existingParam.literalValue !== null && existingParam.literalValue !== undefined && (existingParam.fieldId === null || existingParam.fieldId === undefined) ? '' : 'd-none'}">
+                <div class="literal-value ${existingParam && existingParam.literalValue !== undefined && existingParam.fieldId === null ? '' : 'd-none'}">
                     <input type="text" class="form-control param-literal" data-param-index="${i}" 
-                        value="${existingParam && (existingParam.literalValue !== null && existingParam.literalValue !== undefined) ? existingParam.literalValue : ''}">
+                        value="${existingParam && existingParam.literalValue !== undefined ? existingParam.literalValue : ''}">
                 </div>
             </div>
         `;
@@ -1572,78 +1520,5 @@ function showToast(title, message, type = 'success') {
             toast.style.display = 'none';
             document.body.removeChild(toast);
         }, 3000);
-    }
-}
-
-// Bulk Delete Functions for Rules
-function toggleAllRules(selectAllCheckbox) {
-    const checkboxes = document.querySelectorAll('.rule-checkbox');
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = selectAllCheckbox.checked;
-    });
-    updateBulkDeleteRulesButton();
-}
-
-function updateBulkDeleteRulesButton() {
-    const selectedCheckboxes = document.querySelectorAll('.rule-checkbox:checked');
-    const bulkDeleteBtn = document.getElementById('bulkDeleteRulesBtn');
-    const selectAllCheckbox = document.getElementById('selectAllRules');
-    
-    if (selectedCheckboxes.length > 0) {
-        bulkDeleteBtn.style.display = 'inline-block';
-        bulkDeleteBtn.innerHTML = `<i class="fas fa-trash me-2"></i>Delete Selected (${selectedCheckboxes.length})`;
-    } else {
-        bulkDeleteBtn.style.display = 'none';
-    }
-
-    // Update select all checkbox state
-    const allCheckboxes = document.querySelectorAll('.rule-checkbox');
-    if (selectedCheckboxes.length === allCheckboxes.length) {
-        selectAllCheckbox.checked = true;
-        selectAllCheckbox.indeterminate = false;
-    } else if (selectedCheckboxes.length > 0) {
-        selectAllCheckbox.checked = false;
-        selectAllCheckbox.indeterminate = true;
-    } else {
-        selectAllCheckbox.checked = false;
-        selectAllCheckbox.indeterminate = false;
-    }
-}
-
-function bulkDeleteRules() {
-    const selectedCheckboxes = document.querySelectorAll('.rule-checkbox:checked');
-    if (selectedCheckboxes.length === 0) {
-        alert('Please select rules to delete');
-        return;
-    }
-
-    const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.value);
-    const confirmMessage = `Are you sure you want to delete ${selectedIds.length} selected rule(s)? This will also delete all associated rule lines and parameters. This action cannot be undone.`;
-    
-    if (confirm(confirmMessage)) {
-        fetch('/rules/bulk_delete_rules', {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                rule_ids: selectedIds
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                loadRules();
-                document.getElementById('selectAllRules').checked = false;
-                updateBulkDeleteRulesButton();
-                showToast('Success', `Successfully deleted ${data.deleted_count} rule(s). ${data.skipped_count > 0 ? data.skipped_count + ' rules were skipped due to dependencies.' : ''}`);
-            } else {
-                showToast('Error', data.message, 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showToast('Error', 'Error during bulk delete operation', 'error');
-        });
     }
 }
