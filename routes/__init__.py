@@ -8,6 +8,7 @@ from .rules import rules_bp
 from .rule_groups import rule_groups_bp
 from .tables import tables_bp
 from .env_config import env_config_bp
+from .flow_designer import flow_designer_bp
 
 def register_blueprints(app):
     app.register_blueprint(base_bp, url_prefix='/')
@@ -18,3 +19,4 @@ def register_blueprints(app):
     app.register_blueprint(rule_groups_bp, url_prefix='/rule_groups')
     app.register_blueprint(tables_bp, url_prefix='/tables')
     app.register_blueprint(env_config_bp, url_prefix='/env_config')
+    app.register_blueprint(flow_designer_bp, url_prefix='/flow_designer')

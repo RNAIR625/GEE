@@ -22,8 +22,11 @@ def get_rule_groups():
         # Handle case when no rule groups exist yet
         if rule_groups is None:
             return jsonify([])
+        
+        # Convert Row objects to dictionaries for proper JSON serialization
+        rule_groups_list = [dict(rule_group) for rule_group in rule_groups]
             
-        return jsonify(rule_groups)
+        return jsonify(rule_groups_list)
     except Exception as e:
         print(f"Error fetching rule groups: {str(e)}")
         return jsonify({"error": str(e)}), 500
@@ -167,16 +170,23 @@ def delete_rule_group(grg_id):
 @rule_groups_bp.route('/get_rules', methods=['GET'])
 def get_rules():
     try:
-        # This would typically fetch rules from a database
-        # For demonstration, returning sample data
-        rules = [
-            {"id": 1, "name": "Validate Email Format"},
-            {"id": 2, "name": "Check Required Fields"},
-            {"id": 3, "name": "Calculate Total Amount"},
-            {"id": 4, "name": "Format Phone Number"},
-            {"id": 5, "name": "Verify Address"}
-        ]
-        return jsonify(rules)
+        db = get_db()
+        rules = query_db("""
+            SELECT r.RULE_ID as id, r.RULE_NAME as name, r.RULE_TYPE, r.DESCRIPTION,
+                   fc.FIELD_CLASS_NAME as class_name
+            FROM GEE_RULES r
+            LEFT JOIN GEE_FIELD_CLASSES fc ON r.GFC_ID = fc.GFC_ID
+            ORDER BY r.RULE_NAME ASC
+        """)
+        
+        # Handle case when no rules exist yet
+        if rules is None:
+            return jsonify([])
+        
+        # Convert Row objects to dictionaries for proper JSON serialization
+        rules_list = [dict(rule) for rule in rules]
+            
+        return jsonify(rules_list)
     except Exception as e:
         print(f"Error fetching rules: {str(e)}")
         return jsonify({"error": str(e)}), 500
@@ -187,8 +197,9 @@ def get_assigned_rules(grg_id):
     try:
         db = get_db()
         rules = query_db("""
-            SELECT r.RULE_ID as id, r.RULE_NAME as name, gr.SEQUENCE as sequence
-            FROM GRG_RULES r
+            SELECT r.RULE_ID as id, r.RULE_NAME as name, gr.SEQUENCE as sequence,
+                   r.RULE_TYPE, r.DESCRIPTION
+            FROM GEE_RULES r
             JOIN GRG_RULE_GROUP_RULES gr ON r.RULE_ID = gr.RULE_ID
             WHERE gr.GRG_ID = ?
             ORDER BY gr.SEQUENCE
@@ -197,8 +208,11 @@ def get_assigned_rules(grg_id):
         # Handle case when no rules are assigned
         if rules is None:
             return jsonify([])
+        
+        # Convert Row objects to dictionaries for proper JSON serialization
+        rules_list = [dict(rule) for rule in rules]
             
-        return jsonify(rules)
+        return jsonify(rules_list)
     except Exception as e:
         print(f"Error fetching assigned rules: {str(e)}")
         return jsonify({"error": str(e)}), 500

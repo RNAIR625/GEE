@@ -88,9 +88,11 @@ class SwaggerParser:
         
         field_class = {
             'name': name,
-            'type': self._determine_class_type(schema),
+            'type': self._determine_class_type(schema, name),
             'description': schema.get('description', f'Field class for {name}'),
-            'fields': []
+            'fields': [],
+            'parent_class': schema.get('x-gee-parent'),
+            'child_classes': schema.get('x-gee-children', [])
         }
         
         properties = schema['properties']
@@ -208,18 +210,34 @@ class SwaggerParser:
             
         return db_type, size, precision
     
-    def _determine_class_type(self, schema: Dict) -> str:
+    def _determine_class_type(self, schema: Dict, schema_name: str = '') -> str:
         """
         Determine the field class type based on schema characteristics
         
         Args:
             schema (Dict): Schema definition
+            schema_name (str): Schema name for additional context
             
         Returns:
             str: Class type
         """
+        # Check for GEE extension first (highest priority)
+        if 'x-gee-class-type' in schema:
+            return schema['x-gee-class-type']
+        
         properties = schema.get('properties', {})
         description = schema.get('description', '').lower()
+        name_lower = schema_name.lower()
+        
+        # Check schema name first (most reliable)
+        if 'api' in name_lower and 'parent' not in name_lower:
+            return 'API'
+        elif 'error' in name_lower:
+            return 'ERROR'
+        elif 'request' in name_lower:
+            return 'REQUEST'
+        elif 'response' in name_lower:
+            return 'RESPONSE'
         
         # Check description for hints
         if 'request' in description:
@@ -228,12 +246,18 @@ class SwaggerParser:
             return 'RESPONSE'
         elif 'error' in description:
             return 'ERROR'
+        elif 'api' in description and 'parent' in description:
+            return 'API'
         elif 'tax' in description or 'calculation' in description:
             return 'CALCULATION'
         
         # Check property patterns for better classification
         property_names = list(properties.keys())
         property_names_lower = [prop.lower() for prop in property_names]
+        
+        # API patterns
+        if any(prop in property_names_lower for prop in ['apiname', 'apiversion', 'endpoint']):
+            return 'API'
         
         # Financial/Tax patterns
         if any(prop in property_names_lower for prop in ['gst', 'hst', 'pst', 'tax', 'amount', 'value']):

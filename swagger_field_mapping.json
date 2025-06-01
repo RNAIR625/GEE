@@ -1,6 +1,14 @@
 {
   "swagger_api": "Canadian GST Calculation API",
   "description": "Field mapping configuration for Canadian GST calculation",
+  "api_hierarchy": {
+    "main_class": "Canadian_GST_Calculation",
+    "child_classes": {
+      "request": "TaxCalculationRequest",
+      "response": "TaxCalculationResponse", 
+      "error": "ErrorResponse"
+    }
+  },
   "request_mappings": {
     "TaxCalculationRequest_objectId_to_cGstI_objectId": {
       "swagger_field_class": "TaxCalculationRequest",

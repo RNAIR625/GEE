@@ -25,24 +25,30 @@
             </div>
         </div>
         
-        <!-- Filter Controls -->
+        <!-- Search and Filter Controls -->
         <div class="row mb-3">
             <div class="col-md-4">
                 <div class="input-group">
-                    <input type="text" class="form-control" id="searchFields" placeholder="Search fields..." onkeyup="filterFields()">
-                    <button class="btn btn-outline-secondary" type="button" onclick="filterFields()">
+                    <input type="text" class="form-control" id="fieldSearch" placeholder="Search fields..." onkeyup="if(event.key==='Enter') performFieldSearch()">
+                    <button class="btn btn-outline-secondary" type="button" onclick="performFieldSearch()">
                         <i class="fas fa-search"></i>
+                    </button>
+                    <button class="btn btn-outline-secondary" type="button" onclick="clearFieldSearch()" title="Clear search">
+                        <i class="fas fa-times"></i>
                     </button>
                 </div>
             </div>
             <div class="col-md-3">
-                <select class="form-select" id="filterFieldClass" onchange="filterFields()">
+                <select class="form-select" id="filterFieldClass" onchange="performFieldSearch()">
                     <option value="">All Classes</option>
                     <!-- Classes will be loaded here -->
                 </select>
             </div>
             <div class="col-md-3">
-                <select class="form-select" id="filterFieldType" onchange="filterFields()">
+                <div id="fieldPaginationInfo" class="text-muted small pt-2"></div>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" id="filterFieldType" onchange="performFieldSearch()">
                     <option value="">All Types</option>
                     <option value="VARCHAR">VARCHAR</option>
                     <option value="INTEGER">INTEGER</option>
@@ -79,6 +85,9 @@
                 <tbody id="fieldTableBody"></tbody>
             </table>
         </div>
+        
+        <!-- Pagination Controls -->
+        <div id="fieldPagination" class="mt-3"></div>
     </div>
 </div>
 
@@ -161,279 +170,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-    let currentDeleteId = null;
-    const fieldModal = new bootstrap.Modal(document.getElementById('fieldModal'));
-    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-
-    // Load fields and classes when page loads
-    document.addEventListener('DOMContentLoaded', function() {
-        loadFields();
-        loadFieldClasses();
-        loadFilterClasses();
-    });
-
-    function loadFieldClasses() {
-        fetch('{{ url_for("fields.get_field_classes") }}')
-            .then(response => response.json())
-            .then(data => {
-                const select = document.getElementById('fieldClass');
-                select.innerHTML = '<option value="">Select Class</option>';
-                data.forEach(cls => {
-                    select.innerHTML += `<option value="${cls.GFC_ID}">${cls.FIELD_CLASS_NAME}</option>`;
-                });
-            });
-    }
-
-    function loadFilterClasses() {
-        fetch('{{ url_for("fields.get_field_classes") }}')
-            .then(response => response.json())
-            .then(data => {
-                const select = document.getElementById('filterFieldClass');
-                select.innerHTML = '<option value="">All Classes</option>';
-                data.forEach(cls => {
-                    select.innerHTML += `<option value="${cls.GFC_ID}">${cls.FIELD_CLASS_NAME}</option>`;
-                });
-            });
-    }
-
-    let allFields = []; // Store all fields for filtering
-
-    function loadFields() {
-        fetch('{{ url_for("fields.get_fields") }}')
-            .then(response => response.json())
-            .then(data => {
-                allFields = data; // Store for filtering
-                renderFields(data);
-            });
-    }
-
-    function renderFields(fields) {
-        const tableBody = document.getElementById('fieldTableBody');
-        tableBody.innerHTML = '';
-        
-        fields.forEach(field => {
-            const className = field.FIELD_CLASS_NAME || 'No Class';
-            const row = `
-                <tr>
-                    <td>
-                        <input type="checkbox" class="field-checkbox" value="${field.GF_ID}" onchange="updateBulkDeleteFieldsButton()">
-                    </td>
-                    <td>${field.GF_NAME}</td>
-                    <td>
-                        <span class="badge bg-secondary">${className}</span>
-                    </td>
-                    <td>${field.GF_TYPE}</td>
-                    <td>${field.GF_SIZE || ''}</td>
-                    <td>${field.GF_PRECISION_SIZE || ''}</td>
-                    <td>${field.GF_DEFAULT_VALUE || ''}</td>
-                    <td>${field.GF_DESCRIPTION || ''}</td>
-                    <td class="action-buttons">
-                        <button class="btn btn-warning btn-sm" onclick="editField(${JSON.stringify(field).replace(/"/g, '&quot;')})">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-danger btn-sm" onclick="deleteField(${field.GF_ID})">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
-            tableBody.innerHTML += row;
-        });
-
-        // Update field count
-        document.getElementById('fieldCount').textContent = `${fields.length} fields`;
-    }
-
-    function openNewFieldModal() {
-        document.getElementById('modalTitle').textContent = 'Add New Field';
-        document.getElementById('fieldForm').reset();
-        document.getElementById('gfId').value = '';
-        fieldModal.show();
-    }
-
-    function editField(field) {
-        document.getElementById('modalTitle').textContent = 'Edit Field';
-        document.getElementById('gfId').value = field.GF_ID;
-        document.getElementById('fieldClass').value = field.GFC_ID || '';
-        document.getElementById('fieldName').value = field.GF_NAME;
-        document.getElementById('fieldType').value = field.GF_TYPE;
-        document.getElementById('fieldSize').value = field.GF_SIZE || '';
-        document.getElementById('fieldPrecision').value = field.GF_PRECISION_SIZE || '';
-        document.getElementById('fieldDefault').value = field.GF_DEFAULT_VALUE || '';
-        document.getElementById('fieldDescription').value = field.GF_DESCRIPTION || '';
-        fieldModal.show();
-    }
-
-    function saveField() {
-        const gfId = document.getElementById('gfId').value;
-        const data = {
-            gfcId: document.getElementById('fieldClass').value || null,
-            fieldName: document.getElementById('fieldName').value,
-            type: document.getElementById('fieldType').value,
-            size: document.getElementById('fieldSize').value || null,
-            precision: document.getElementById('fieldPrecision').value || null,
-            defaultValue: document.getElementById('fieldDefault').value || null,
-            description: document.getElementById('fieldDescription').value || null
-        };
-
-        if (!data.fieldName || !data.type) {
-            alert('Field Name and Type are required!');
-            return;
-        }
-
-        const method = gfId ? 'PUT' : 'POST';
-        const url = gfId ? '{{ url_for("fields.update_field") }}' : '{{ url_for("fields.add_field") }}';
-        if (gfId) data.gfId = gfId;
-
-        fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.success) {
-                fieldModal.hide();
-                loadFields();
-                alert(result.message);
-            } else {
-                alert('Error: ' + result.message);
-            }
-        });
-    }
-
-    function filterFields() {
-        const searchTerm = document.getElementById('searchFields').value.toLowerCase();
-        const classFilter = document.getElementById('filterFieldClass').value;
-        const typeFilter = document.getElementById('filterFieldType').value;
-        
-        let filteredFields = allFields;
-        
-        // Apply search filter
-        if (searchTerm) {
-            filteredFields = filteredFields.filter(field => 
-                field.GF_NAME.toLowerCase().includes(searchTerm) || 
-                (field.GF_DESCRIPTION && field.GF_DESCRIPTION.toLowerCase().includes(searchTerm)) ||
-                (field.FIELD_CLASS_NAME && field.FIELD_CLASS_NAME.toLowerCase().includes(searchTerm))
-            );
-        }
-        
-        // Apply class filter
-        if (classFilter) {
-            filteredFields = filteredFields.filter(field => 
-                field.GFC_ID && field.GFC_ID.toString() === classFilter
-            );
-        }
-        
-        // Apply type filter
-        if (typeFilter) {
-            filteredFields = filteredFields.filter(field => field.GF_TYPE === typeFilter);
-        }
-        
-        renderFields(filteredFields);
-        
-        // Reset checkbox states after filtering
-        document.getElementById('selectAllFields').checked = false;
-        updateBulkDeleteFieldsButton();
-    }
-
-    function deleteField(gfId) {
-        currentDeleteId = gfId;
-        deleteModal.show();
-    }
-
-    function confirmDelete() {
-        if (!currentDeleteId) return;
-        
-        fetch(`{{ url_for("fields.delete_field", gf_id=0) }}`.replace('0', currentDeleteId), {
-            method: 'DELETE'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                deleteModal.hide();
-                loadFields();
-                alert(data.message);
-            } else {
-                alert('Error: ' + data.message);
-            }
-        });
-    }
-
-    // Bulk Delete Functions for Fields
-    function toggleAllFields(selectAllCheckbox) {
-        const checkboxes = document.querySelectorAll('.field-checkbox');
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = selectAllCheckbox.checked;
-        });
-        updateBulkDeleteFieldsButton();
-    }
-
-    function updateBulkDeleteFieldsButton() {
-        const selectedCheckboxes = document.querySelectorAll('.field-checkbox:checked');
-        const bulkDeleteBtn = document.getElementById('bulkDeleteFieldsBtn');
-        const selectAllCheckbox = document.getElementById('selectAllFields');
-        
-        if (selectedCheckboxes.length > 0) {
-            bulkDeleteBtn.style.display = 'inline-block';
-            bulkDeleteBtn.innerHTML = `<i class="fas fa-trash me-2"></i>Delete Selected (${selectedCheckboxes.length})`;
-        } else {
-            bulkDeleteBtn.style.display = 'none';
-        }
-
-        // Update select all checkbox state
-        const allCheckboxes = document.querySelectorAll('.field-checkbox');
-        if (selectedCheckboxes.length === allCheckboxes.length) {
-            selectAllCheckbox.checked = true;
-            selectAllCheckbox.indeterminate = false;
-        } else if (selectedCheckboxes.length > 0) {
-            selectAllCheckbox.checked = false;
-            selectAllCheckbox.indeterminate = true;
-        } else {
-            selectAllCheckbox.checked = false;
-            selectAllCheckbox.indeterminate = false;
-        }
-    }
-
-    function bulkDeleteFields() {
-        const selectedCheckboxes = document.querySelectorAll('.field-checkbox:checked');
-        if (selectedCheckboxes.length === 0) {
-            alert('Please select fields to delete');
-            return;
-        }
-
-        const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.value);
-        const confirmMessage = `Are you sure you want to delete ${selectedIds.length} selected field(s)? This action cannot be undone.`;
-        
-        if (confirm(confirmMessage)) {
-            fetch('{{ url_for("fields.bulk_delete_fields") }}', {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    field_ids: selectedIds
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    loadFields();
-                    document.getElementById('selectAllFields').checked = false;
-                    updateBulkDeleteFieldsButton();
-                    alert(`Successfully deleted ${data.deleted_count} field(s).`);
-                } else {
-                    alert('Error: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error during bulk delete operation');
-            });
-        }
-    }
-</script>
+<!-- Fields management script -->
+<script src="{{ url_for('static', filename='js/fields.js') }}"></script>
 {% endblock %}

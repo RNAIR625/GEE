@@ -20,6 +20,60 @@
     right: 20px;
     z-index: 1050;
 }
+
+/* Collapsible hierarchy styles */
+.parent-class-row {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.parent-class-row:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+.collapse-icon {
+    transition: transform 0.3s ease;
+    margin-right: 8px;
+    cursor: pointer;
+    color: #6c757d;
+    font-size: 0.9em;
+}
+
+.collapse-icon.collapsed {
+    transform: rotate(-90deg);
+}
+
+.child-class-row {
+    background-color: rgba(0, 0, 0, 0.02);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.child-class-row.hidden {
+    display: none;
+}
+
+.child-class-content {
+    padding-left: 20px;
+    border-left: 3px solid #007bff;
+    margin-left: 10px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+
+.parent-class-name {
+    font-weight: 500;
+}
+
+.has-children {
+    position: relative;
+}
+
+.children-indicator {
+    font-size: 0.75rem;
+    color: #6c757d;
+    font-style: italic;
+}
 {% endblock %}
 
 {% block content %}
@@ -28,6 +82,12 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h4 class="card-title mb-0">Field Classes</h4>
             <div>
+                <button class="btn btn-outline-secondary btn-sm me-2" onclick="expandAllParents()" title="Expand all parent classes">
+                    <i class="fas fa-expand-alt me-1"></i>Expand All
+                </button>
+                <button class="btn btn-outline-secondary btn-sm me-2" onclick="collapseAllParents()" title="Collapse all parent classes">
+                    <i class="fas fa-compress-alt me-1"></i>Collapse All
+                </button>
                 <button class="btn btn-danger me-2" id="bulkDeleteBtn" onclick="bulkDeleteClasses()" style="display: none;">
                     <i class="fas fa-trash me-2"></i>Delete Selected
                 </button>
@@ -40,6 +100,24 @@
             </div>
         </div>
         
+        <!-- Search and Filter Controls -->
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="classSearch" placeholder="Search field classes..." onkeyup="if(event.key==='Enter') performSearch()">
+                    <button class="btn btn-outline-secondary" type="button" onclick="performSearch()">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()" title="Clear search">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div id="classPaginationInfo" class="text-muted small pt-2"></div>
+            </div>
+        </div>
+        
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead>
@@ -49,6 +127,8 @@
                         </th>
                         <th>Class Name</th>
                         <th>Type</th>
+                        <th>Parent Class</th>
+                        <th>Children</th>
                         <th>Description</th>
                         <th>Actions</th>
                     </tr>
@@ -56,6 +136,9 @@
                 <tbody id="classTableBody"></tbody>
             </table>
         </div>
+        
+        <!-- Pagination Controls -->
+        <div id="classPagination" class="mt-3"></div>
     </div>
 </div>
 {% endblock %}
@@ -66,19 +149,32 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="modalTitle">Add New Class</h5>
+                <h5 class="modal-title" id="classModalTitle">Add New Class</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="classForm">
-                    <input type="hidden" id="gfcId">
+                    <input type="hidden" id="classId">
                     <div class="mb-3">
                         <label class="form-label">Class Name</label>
                         <input type="text" class="form-control" id="className" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Type</label>
-                        <input type="text" class="form-control" id="classType" required>
+                        <select class="form-control" id="classType" required>
+                            <option value="API">API</option>
+                            <option value="REQUEST">REQUEST</option>
+                            <option value="RESPONSE">RESPONSE</option>
+                            <option value="SCHEMA">SCHEMA</option>
+                            <option value="CUSTOM">CUSTOM</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Parent Class</label>
+                        <select class="form-control" id="parentClass">
+                            <option value="">No Parent (Root Class)</option>
+                        </select>
+                        <div class="form-text">Select a parent class if this is a child class (e.g., REQUEST/RESPONSE classes under API)</div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
@@ -96,18 +192,148 @@
 
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Confirm Delete</h5>
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                    Confirm Field Class Deletion
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                Are you sure you want to delete this class?
+                <!-- Loading State -->
+                <div id="deleteLoadingState" class="text-center py-4">
+                    <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                    <p class="mt-2">Loading deletion information...</p>
+                </div>
+                
+                <!-- Deletion Information -->
+                <div id="deleteInformation" class="d-none">
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-info-circle me-2"></i>Deletion Summary</h6>
+                        <p class="mb-0">You are about to delete the field class "<strong id="deleteClassName"></strong>". This action will:</p>
+                    </div>
+                    
+                    <!-- Summary Stats -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <div class="card text-center border-danger">
+                                <div class="card-body p-2">
+                                    <h5 class="card-title text-danger mb-1" id="totalFieldsCount">0</h5>
+                                    <small class="text-muted">Total Fields</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center border-warning">
+                                <div class="card-body p-2">
+                                    <h5 class="card-title text-warning mb-1" id="childClassesCount">0</h5>
+                                    <small class="text-muted">Child Classes</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center border-info">
+                                <div class="card-body p-2">
+                                    <h5 class="card-title text-info mb-1" id="childFieldsCount">0</h5>
+                                    <small class="text-muted">Child Fields</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center border-secondary">
+                                <div class="card-body p-2">
+                                    <h5 class="card-title text-secondary mb-1" id="rulesUsingCount">0</h5>
+                                    <small class="text-muted">Rules Using</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Detailed Information Accordion -->
+                    <div class="accordion" id="deletionDetailsAccordion">
+                        <!-- Fields Section -->
+                        <div class="accordion-item" id="fieldsSection">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#fieldsCollapse">
+                                    <i class="fas fa-list me-2"></i>
+                                    Fields to be deleted (<span id="fieldsCountInHeader">0</span>)
+                                </button>
+                            </h2>
+                            <div id="fieldsCollapse" class="accordion-collapse collapse" data-bs-parent="#deletionDetailsAccordion">
+                                <div class="accordion-body">
+                                    <div id="fieldsToDeleteList" class="list-group list-group-flush">
+                                        <!-- Fields will be populated here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Child Classes Section -->
+                        <div class="accordion-item" id="childClassesSection">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#childClassesCollapse">
+                                    <i class="fas fa-sitemap me-2"></i>
+                                    Child classes to be deleted (<span id="childClassesCountInHeader">0</span>)
+                                </button>
+                            </h2>
+                            <div id="childClassesCollapse" class="accordion-collapse collapse" data-bs-parent="#deletionDetailsAccordion">
+                                <div class="accordion-body">
+                                    <div id="childClassesToDeleteList" class="list-group list-group-flush">
+                                        <!-- Child classes will be populated here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Rules Section -->
+                        <div class="accordion-item" id="rulesSection">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#rulesCollapse">
+                                    <i class="fas fa-cogs me-2"></i>
+                                    Rules that will be unlinked (<span id="rulesCountInHeader">0</span>)
+                                </button>
+                            </h2>
+                            <div id="rulesCollapse" class="accordion-collapse collapse" data-bs-parent="#deletionDetailsAccordion">
+                                <div class="accordion-body">
+                                    <div id="rulesToUnlinkList" class="list-group list-group-flush">
+                                        <!-- Rules will be populated here -->
+                                    </div>
+                                    <div class="alert alert-info mt-2 mb-0">
+                                        <small><i class="fas fa-info-circle me-1"></i>Rules will not be deleted, only unlinked from this field class.</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Final Confirmation -->
+                    <div class="alert alert-danger mt-3 mb-0">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>Warning</h6>
+                        <p class="mb-2"><strong>This action cannot be undone!</strong> All associated data will be permanently deleted.</p>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="confirmDeletionCheckbox">
+                            <label class="form-check-label" for="confirmDeletionCheckbox">
+                                I understand this action cannot be undone
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Error State -->
+                <div id="deleteErrorState" class="d-none">
+                    <div class="alert alert-danger">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>Error</h6>
+                        <p id="deleteErrorMessage" class="mb-0">Failed to load deletion information.</p>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn" onclick="confirmDelete()" disabled>
+                    <i class="fas fa-trash me-2"></i>Delete Field Class
+                </button>
             </div>
         </div>
     </div>
@@ -173,8 +399,12 @@
                             <div id="fieldClassesPreview" class="border p-2 mt-2 bg-light"></div>
                         </div>
                         <div class="mb-3">
-                            <strong>Fields to be Created:</strong>
-                            <div id="fieldsPreview" class="border p-2 mt-2 bg-light" style="max-height: 300px; overflow-y: auto;"></div>
+                            <strong>Input Fields to be Created:</strong>
+                            <div id="inputFieldsPreview" class="border p-2 mt-2 bg-light" style="max-height: 200px; overflow-y: auto;"></div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Output Fields to be Created:</strong>
+                            <div id="outputFieldsPreview" class="border p-2 mt-2 bg-light" style="max-height: 200px; overflow-y: auto;"></div>
                         </div>
                     </div>
                 </div>
@@ -193,442 +423,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-    let currentDeleteId = null;
-    let currentImportStep = 1;
-    let parsedSwaggerData = null;
-    const classModal = new bootstrap.Modal(document.getElementById('classModal'));
-    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-    const swaggerImportModal = new bootstrap.Modal(document.getElementById('swaggerImportModal'));
-
-    // Load classes when page loads
-    document.addEventListener('DOMContentLoaded', function() {
-        loadClasses();
-        loadExistingSwaggerFiles();
-    });
-
-    function loadClasses() {
-        fetch('{{ url_for("classes.get_classes") }}')
-            .then(response => response.json())
-            .then(data => {
-                const tableBody = document.getElementById('classTableBody');
-                tableBody.innerHTML = '';
-
-                data.forEach(cls => {
-                    const row = `
-                        <tr>
-                            <td>
-                                <input type="checkbox" class="class-checkbox" value="${cls.GFC_ID}" onchange="updateBulkDeleteButton()">
-                            </td>
-                            <td>${cls.FIELD_CLASS_NAME}</td>
-                            <td>${cls.CLASS_TYPE}</td>
-                            <td>${cls.DESCRIPTION || ''}</td>
-                            <td class="action-buttons">
-                                <button class="btn btn-warning btn-sm" onclick="editClass(${cls.GFC_ID}, '${cls.FIELD_CLASS_NAME}', '${cls.CLASS_TYPE}', '${cls.DESCRIPTION || ''}')">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-danger btn-sm" onclick="deleteClass(${cls.GFC_ID})">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                    tableBody.innerHTML += row;
-                });
-            });
-    }
-
-    function openNewClassModal() {
-        document.getElementById('modalTitle').textContent = 'Add New Class';
-        document.getElementById('classForm').reset();
-        document.getElementById('gfcId').value = '';
-        classModal.show();
-    }
-
-    function editClass(gfcId, className, type, description) {
-        document.getElementById('modalTitle').textContent = 'Edit Class';
-        document.getElementById('gfcId').value = gfcId;
-        document.getElementById('className').value = className;
-        document.getElementById('classType').value = type;
-        document.getElementById('classDescription').value = description || '';
-        classModal.show();
-    }
-
-    function saveClass() {
-        const gfcId = document.getElementById('gfcId').value;
-        const className = document.getElementById('className').value;
-        const type = document.getElementById('classType').value;
-        const description = document.getElementById('classDescription').value;
-
-        if (!className || !type) {
-            alert('Class Name and Type are required!');
-            return;
-        }
-
-        const method = gfcId ? 'PUT' : 'POST';
-        const url = gfcId ? '{{ url_for("classes.update_class") }}' : '{{ url_for("classes.add_class") }}';
-
-        fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                gfcId: gfcId,
-                className: className,
-                type: type,
-                description: description
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                classModal.hide();
-                loadClasses();
-                alert(data.message);
-            } else {
-                alert('Error: ' + data.message);
-            }
-        });
-    }
-
-    function deleteClass(gfcId) {
-        currentDeleteId = gfcId;
-        deleteModal.show();
-    }
-
-    function confirmDelete() {
-        if (!currentDeleteId) return;
-
-        fetch(`{{ url_for("classes.delete_class", gfc_id=0) }}`.replace('0', currentDeleteId), {
-            method: 'DELETE'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                deleteModal.hide();
-                loadClasses();
-                alert(data.message);
-            } else {
-                alert('Error: ' + data.message);
-            }
-        });
-    }
-
-    // Swagger Import Functions
-    function openSwaggerImportModal() {
-        currentImportStep = 1;
-        parsedSwaggerData = null;
-        resetImportModal();
-        swaggerImportModal.show();
-    }
-
-    function resetImportModal() {
-        // Reset all steps
-        document.querySelectorAll('.import-step').forEach(step => step.classList.add('d-none'));
-        document.getElementById('step1').classList.remove('d-none');
-        
-        // Reset form fields
-        document.getElementById('swaggerFile').value = '';
-        document.getElementById('existingSwaggerFiles').value = '';
-        document.getElementById('importClassName').value = '';
-        document.getElementById('cleanupExisting').checked = false;
-        
-        // Reset buttons
-        updateImportButtons();
-    }
-
-    function loadExistingSwaggerFiles() {
-        fetch('{{ url_for("classes.get_swagger_files") }}')
-            .then(response => response.json())
-            .then(data => {
-                const select = document.getElementById('existingSwaggerFiles');
-                select.innerHTML = '<option value="">Select existing file...</option>';
-                
-                data.files.forEach(file => {
-                    const option = document.createElement('option');
-                    option.value = file.path;
-                    option.textContent = file.name;
-                    select.appendChild(option);
-                });
-            })
-            .catch(error => {
-                console.error('Error loading existing files:', error);
-            });
-    }
-
-    function handleFileSelect() {
-        const fileInput = document.getElementById('swaggerFile');
-        const file = fileInput.files[0];
-        
-        if (file) {
-            document.getElementById('existingSwaggerFiles').value = '';
-            document.getElementById('nextStepBtn').disabled = false;
-        } else {
-            document.getElementById('nextStepBtn').disabled = true;
-        }
-    }
-
-    function handleExistingFileSelect() {
-        const select = document.getElementById('existingSwaggerFiles');
-        if (select.value) {
-            document.getElementById('swaggerFile').value = '';
-            document.getElementById('nextStepBtn').disabled = false;
-        } else {
-            document.getElementById('nextStepBtn').disabled = true;
-        }
-    }
-
-    function nextStep() {
-        if (currentImportStep === 1) {
-            parseSwaggerFile();
-        } else if (currentImportStep === 2) {
-            showPreview();
-        }
-    }
-
-    function previousStep() {
-        currentImportStep--;
-        document.querySelectorAll('.import-step').forEach(step => step.classList.add('d-none'));
-        document.getElementById(`step${currentImportStep}`).classList.remove('d-none');
-        updateImportButtons();
-    }
-
-    function updateImportButtons() {
-        const prevBtn = document.getElementById('prevStepBtn');
-        const nextBtn = document.getElementById('nextStepBtn');
-        const importBtn = document.getElementById('importBtn');
-
-        prevBtn.style.display = currentImportStep > 1 ? 'inline-block' : 'none';
-        nextBtn.style.display = currentImportStep < 3 ? 'inline-block' : 'none';
-        importBtn.style.display = currentImportStep === 3 ? 'inline-block' : 'none';
-
-        nextBtn.disabled = currentImportStep === 1 && !hasFileSelected();
-    }
-
-    function hasFileSelected() {
-        const fileInput = document.getElementById('swaggerFile');
-        const existingSelect = document.getElementById('existingSwaggerFiles');
-        return (fileInput.files.length > 0) || (existingSelect.value !== '');
-    }
-
-    function parseSwaggerFile() {
-        const fileInput = document.getElementById('swaggerFile');
-        const existingSelect = document.getElementById('existingSwaggerFiles');
-        
-        let formData = new FormData();
-        
-        if (fileInput.files.length > 0) {
-            formData.append('swagger_file', fileInput.files[0]);
-        } else if (existingSelect.value) {
-            formData.append('existing_file_path', existingSelect.value);
-        } else {
-            alert('Please select a file to import');
-            return;
-        }
-
-        fetch('{{ url_for("classes.parse_swagger") }}', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                parsedSwaggerData = data;
-                currentImportStep = 2;
-                
-                // Pre-fill class name with suggestion
-                document.getElementById('importClassName').value = data.suggested_class_name || '';
-                
-                document.querySelectorAll('.import-step').forEach(step => step.classList.add('d-none'));
-                document.getElementById('step2').classList.remove('d-none');
-                updateImportButtons();
-            } else {
-                alert('Error parsing Swagger file: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error parsing Swagger file');
-        });
-    }
-
-    function showPreview() {
-        const className = document.getElementById('importClassName').value.trim();
-        if (!className) {
-            alert('Please enter a field class name');
-            return;
-        }
-
-        // Update API info
-        const apiInfo = document.getElementById('apiInfo');
-        apiInfo.innerHTML = `
-            <strong>Title:</strong> ${parsedSwaggerData.api_info.title}<br>
-            <strong>Description:</strong> ${parsedSwaggerData.api_info.description}<br>
-            <strong>Version:</strong> ${parsedSwaggerData.api_info.version}
-        `;
-
-        // Update field classes preview
-        const classesPreview = document.getElementById('fieldClassesPreview');
-        let classesHtml = '';
-        parsedSwaggerData.field_classes.forEach(fc => {
-            classesHtml += `<div class="mb-2">
-                <strong>${fc.name}</strong> (${fc.type}) - ${fc.fields.length} fields<br>
-                <small class="text-muted">${fc.description}</small>
-            </div>`;
-        });
-        classesPreview.innerHTML = classesHtml || '<em>No field classes found</em>';
-
-        // Update fields preview
-        const fieldsPreview = document.getElementById('fieldsPreview');
-        let fieldsHtml = '<div class="row"><div class="col-md-6"><strong>Input Fields:</strong></div><div class="col-md-6"><strong>Output Fields:</strong></div></div>';
-        
-        const inputFields = parsedSwaggerData.input_fields || [];
-        const outputFields = parsedSwaggerData.output_fields || [];
-        
-        const maxRows = Math.max(inputFields.length, outputFields.length);
-        
-        for (let i = 0; i < maxRows; i++) {
-            fieldsHtml += '<div class="row border-bottom py-1">';
-            
-            // Input field
-            fieldsHtml += '<div class="col-md-6">';
-            if (i < inputFields.length) {
-                const field = inputFields[i];
-                fieldsHtml += `<strong>${field.name}</strong> (${field.type})<br>
-                    <small class="text-muted">${field.description || 'No description'}</small>`;
-            }
-            fieldsHtml += '</div>';
-            
-            // Output field
-            fieldsHtml += '<div class="col-md-6">';
-            if (i < outputFields.length) {
-                const field = outputFields[i];
-                fieldsHtml += `<strong>${field.name}</strong> (${field.type})<br>
-                    <small class="text-muted">${field.description || 'No description'}</small>`;
-            }
-            fieldsHtml += '</div>';
-            
-            fieldsHtml += '</div>';
-        }
-        
-        fieldsPreview.innerHTML = fieldsHtml || '<em>No fields found</em>';
-
-        currentImportStep = 3;
-        document.querySelectorAll('.import-step').forEach(step => step.classList.add('d-none'));
-        document.getElementById('step3').classList.remove('d-none');
-        updateImportButtons();
-    }
-
-    function performImport() {
-        const className = document.getElementById('importClassName').value.trim();
-        const cleanupExisting = document.getElementById('cleanupExisting').checked;
-
-        if (!className || !parsedSwaggerData) {
-            alert('Missing required data for import');
-            return;
-        }
-
-        const importData = {
-            class_name: className,
-            cleanup_existing: cleanupExisting,
-            swagger_data: parsedSwaggerData
-        };
-
-        fetch('{{ url_for("classes.import_swagger") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(importData)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                swaggerImportModal.hide();
-                loadClasses();
-                alert(`Import successful!\nCreated: ${data.stats.classes_created} field classes, ${data.stats.fields_created} fields`);
-            } else {
-                alert('Import failed: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Import failed due to an error');
-        });
-    }
-
-    // Bulk Delete Functions
-    function toggleAllClasses(selectAllCheckbox) {
-        const checkboxes = document.querySelectorAll('.class-checkbox');
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = selectAllCheckbox.checked;
-        });
-        updateBulkDeleteButton();
-    }
-
-    function updateBulkDeleteButton() {
-        const selectedCheckboxes = document.querySelectorAll('.class-checkbox:checked');
-        const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
-        const selectAllCheckbox = document.getElementById('selectAllClasses');
-        
-        if (selectedCheckboxes.length > 0) {
-            bulkDeleteBtn.style.display = 'inline-block';
-            bulkDeleteBtn.textContent = `Delete Selected (${selectedCheckboxes.length})`;
-        } else {
-            bulkDeleteBtn.style.display = 'none';
-        }
-
-        // Update select all checkbox state
-        const allCheckboxes = document.querySelectorAll('.class-checkbox');
-        if (selectedCheckboxes.length === allCheckboxes.length) {
-            selectAllCheckbox.checked = true;
-            selectAllCheckbox.indeterminate = false;
-        } else if (selectedCheckboxes.length > 0) {
-            selectAllCheckbox.checked = false;
-            selectAllCheckbox.indeterminate = true;
-        } else {
-            selectAllCheckbox.checked = false;
-            selectAllCheckbox.indeterminate = false;
-        }
-    }
-
-    function bulkDeleteClasses() {
-        const selectedCheckboxes = document.querySelectorAll('.class-checkbox:checked');
-        if (selectedCheckboxes.length === 0) {
-            alert('Please select classes to delete');
-            return;
-        }
-
-        const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.value);
-        const confirmMessage = `Are you sure you want to delete ${selectedIds.length} selected class(es)? This action cannot be undone.`;
-        
-        if (confirm(confirmMessage)) {
-            fetch('{{ url_for("classes.bulk_delete_classes") }}', {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    class_ids: selectedIds
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    loadClasses();
-                    document.getElementById('selectAllClasses').checked = false;
-                    updateBulkDeleteButton();
-                    alert(`Successfully deleted ${data.deleted_count} class(es). ${data.skipped_count > 0 ? data.skipped_count + ' classes were skipped due to dependencies.' : ''}`);
-                } else {
-                    alert('Error: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error during bulk delete operation');
-            });
-        }
-    }
-</script>
+<!-- Class management script -->
+<script src="{{ url_for('static', filename='js/class.js') }}"></script>
 {% endblock %}

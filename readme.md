@@ -1,4 +1,4 @@
-# GEE Application with Oracle Integration
+# GEE Forge with Oracle Integration
 
 This application provides a management interface for field classes, fields, tables, and environments with Oracle database integration.
 

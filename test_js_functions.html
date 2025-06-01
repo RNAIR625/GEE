@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Enhanced Delete JavaScript Functions</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+<div class="container mt-4">
+    <h2>Test Enhanced Delete JavaScript Functions</h2>
+    
+    <div class="mb-3">
+        <button class="btn btn-danger" onclick="testDeleteFunction(1)">
+            Test Delete Class 1 (Parent with children)
+        </button>
+        <button class="btn btn-danger ms-2" onclick="testDeleteFunction(2)">
+            Test Delete Class 2 (Child class)
+        </button>
+        <button class="btn btn-danger ms-2" onclick="testDeleteFunction(6)">
+            Test Delete Class 6 (Many fields)
+        </button>
+    </div>
+    
+    <div class="mt-3">
+        <h5>Test Output:</h5>
+        <div id="test-output" class="border p-3 bg-light" style="height: 400px; overflow-y: auto;"></div>
+    </div>
+</div>
+
+<!-- Enhanced Delete Modal (copied from class.html) -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                    Confirm Field Class Deletion
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Loading State -->
+                <div id="deleteLoadingState" class="text-center py-4">
+                    <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                    <p class="mt-2">Loading deletion information...</p>
+                </div>
+                
+                <!-- Deletion Information -->
+                <div id="deleteInformation" class="d-none">
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-info-circle me-2"></i>Deletion Summary</h6>
+                        <p class="mb-0">You are about to delete the field class "<strong id="deleteClassName"></strong>". This action will:</p>
+                    </div>
+                    
+                    <!-- Summary Stats -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <div class="card text-center border-danger">
+                                <div class="card-body p-2">
+                                    <h5 class="card-title text-danger mb-1" id="totalFieldsCount">0</h5>
+                                    <small class="text-muted">Total Fields</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center border-warning">
+                                <div class="card-body p-2">
+                                    <h5 class="card-title text-warning mb-1" id="childClassesCount">0</h5>
+                                    <small class="text-muted">Child Classes</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center border-info">
+                                <div class="card-body p-2">
+                                    <h5 class="card-title text-info mb-1" id="childFieldsCount">0</h5>
+                                    <small class="text-muted">Child Fields</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center border-secondary">
+                                <div class="card-body p-2">
+                                    <h5 class="card-title text-secondary mb-1" id="rulesUsingCount">0</h5>
+                                    <small class="text-muted">Rules Using</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Detailed Information Accordion -->
+                    <div class="accordion" id="deletionDetailsAccordion">
+                        <!-- Fields Section -->
+                        <div class="accordion-item" id="fieldsSection">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#fieldsCollapse">
+                                    <i class="fas fa-list me-2"></i>
+                                    Fields to be deleted (<span id="fieldsCountInHeader">0</span>)
+                                </button>
+                            </h2>
+                            <div id="fieldsCollapse" class="accordion-collapse collapse" data-bs-parent="#deletionDetailsAccordion">
+                                <div class="accordion-body">
+                                    <div id="fieldsToDeleteList" class="list-group list-group-flush">
+                                        <!-- Fields will be populated here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Child Classes Section -->
+                        <div class="accordion-item" id="childClassesSection">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#childClassesCollapse">
+                                    <i class="fas fa-sitemap me-2"></i>
+                                    Child classes to be deleted (<span id="childClassesCountInHeader">0</span>)
+                                </button>
+                            </h2>
+                            <div id="childClassesCollapse" class="accordion-collapse collapse" data-bs-parent="#deletionDetailsAccordion">
+                                <div class="accordion-body">
+                                    <div id="childClassesToDeleteList" class="list-group list-group-flush">
+                                        <!-- Child classes will be populated here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Rules Section -->
+                        <div class="accordion-item" id="rulesSection">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#rulesCollapse">
+                                    <i class="fas fa-cogs me-2"></i>
+                                    Rules that will be unlinked (<span id="rulesCountInHeader">0</span>)
+                                </button>
+                            </h2>
+                            <div id="rulesCollapse" class="accordion-collapse collapse" data-bs-parent="#deletionDetailsAccordion">
+                                <div class="accordion-body">
+                                    <div id="rulesToUnlinkList" class="list-group list-group-flush">
+                                        <!-- Rules will be populated here -->
+                                    </div>
+                                    <div class="alert alert-info mt-2 mb-0">
+                                        <small><i class="fas fa-info-circle me-1"></i>Rules will not be deleted, only unlinked from this field class.</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Final Confirmation -->
+                    <div class="alert alert-danger mt-3 mb-0">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>Warning</h6>
+                        <p class="mb-2"><strong>This action cannot be undone!</strong> All associated data will be permanently deleted.</p>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="confirmDeletionCheckbox">
+                            <label class="form-check-label" for="confirmDeletionCheckbox">
+                                I understand this action cannot be undone
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Error State -->
+                <div id="deleteErrorState" class="d-none">
+                    <div class="alert alert-danger">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>Error</h6>
+                        <p id="deleteErrorMessage" class="mb-0">Failed to load deletion information.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn" onclick="confirmDelete()" disabled>
+                    <i class="fas fa-trash me-2"></i>Delete Field Class
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Global variables (from class.js)
+    let currentDeleteId = null;
+    let deleteModal = null;
+    
+    // Initialize modal
+    document.addEventListener('DOMContentLoaded', function() {
+        const deleteModalElement = document.getElementById('deleteModal');
+        if (deleteModalElement) {
+            deleteModal = new bootstrap.Modal(deleteModalElement);
+        }
+    });
+    
+    // Test output logging
+    function logTest(message) {
+        const output = document.getElementById('test-output');
+        const time = new Date().toLocaleTimeString();
+        output.innerHTML += `[${time}] ${message}<br>`;
+        output.scrollTop = output.scrollHeight;
+        console.log(message);
+    }
+    
+    // Test function to trigger delete
+    function testDeleteFunction(classId) {
+        logTest(`Testing delete functionality for class ID: ${classId}`);
+        currentDeleteId = classId;
+        
+        // Show the modal with loading state
+        showDeleteStates('loading');
+        deleteModal.show();
+        
+        // Load deletion information
+        loadDeletionInfo(classId);
+    }
+    
+    // Show different states in the delete modal (copied from class.js)
+    function showDeleteStates(state) {
+        const loadingState = document.getElementById('deleteLoadingState');
+        const informationState = document.getElementById('deleteInformation');
+        const errorState = document.getElementById('deleteErrorState');
+        const confirmBtn = document.getElementById('confirmDeleteBtn');
+        
+        // Hide all states
+        loadingState.classList.add('d-none');
+        informationState.classList.add('d-none');
+        errorState.classList.add('d-none');
+        
+        // Show appropriate state
+        switch(state) {
+            case 'loading':
+                loadingState.classList.remove('d-none');
+                confirmBtn.disabled = true;
+                logTest('Showing loading state');
+                break;
+            case 'information':
+                informationState.classList.remove('d-none');
+                logTest('Showing information state');
+                break;
+            case 'error':
+                errorState.classList.remove('d-none');
+                confirmBtn.disabled = true;
+                logTest('Showing error state');
+                break;
+        }
+    }
+    
+    // Load deletion information from the server (adapted from class.js)
+    function loadDeletionInfo(classId) {
+        logTest(`Fetching deletion info for class ${classId}...`);
+        
+        fetch(`http://localhost:5002/classes/get_class_deletion_info/${classId}`)
+            .then(response => {
+                logTest(`Response status: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                logTest(`Response received: ${JSON.stringify(data).substring(0, 100)}...`);
+                
+                if (data.success) {
+                    populateDeletionInfo(data);
+                    showDeleteStates('information');
+                    logTest('✅ Successfully loaded and populated deletion information');
+                } else {
+                    document.getElementById('deleteErrorMessage').textContent = data.message;
+                    showDeleteStates('error');
+                    logTest(`❌ Error from server: ${data.message}`);
+                }
+            })
+            .catch(error => {
+                logTest(`❌ Fetch error: ${error.message}`);
+                document.getElementById('deleteErrorMessage').textContent = 'Failed to load deletion information.';
+                showDeleteStates('error');
+            });
+    }
+    
+    // Populate the deletion information in the modal (copied from class.js)
+    function populateDeletionInfo(data) {
+        const fieldClass = data.field_class;
+        const totals = data.totals;
+        
+        logTest(`Populating deletion info for: ${fieldClass.FIELD_CLASS_NAME}`);
+        
+        // Set class name
+        document.getElementById('deleteClassName').textContent = fieldClass.FIELD_CLASS_NAME;
+        
+        // Update summary stats
+        document.getElementById('totalFieldsCount').textContent = totals.total_fields_count;
+        document.getElementById('childClassesCount').textContent = totals.child_classes_count;
+        document.getElementById('childFieldsCount').textContent = totals.child_fields_count;
+        document.getElementById('rulesUsingCount').textContent = totals.rules_using_count;
+        
+        // Update header counts
+        document.getElementById('fieldsCountInHeader').textContent = totals.fields_count;
+        document.getElementById('childClassesCountInHeader').textContent = totals.child_classes_count;
+        document.getElementById('rulesCountInHeader').textContent = totals.rules_using_count;
+        
+        // Populate fields list
+        populateFieldsList(data.fields);
+        
+        // Populate child classes list
+        populateChildClassesList(data.child_classes);
+        
+        // Populate rules list
+        populateRulesList(data.rules_using_class);
+        
+        // Show/hide sections based on content
+        toggleSection('fieldsSection', totals.fields_count > 0);
+        toggleSection('childClassesSection', totals.child_classes_count > 0);
+        toggleSection('rulesSection', totals.rules_using_count > 0);
+        
+        // Reset checkbox and button state
+        const checkbox = document.getElementById('confirmDeletionCheckbox');
+        const confirmBtn = document.getElementById('confirmDeleteBtn');
+        checkbox.checked = false;
+        confirmBtn.disabled = true;
+        
+        // Add checkbox event listener
+        checkbox.onchange = function() {
+            confirmBtn.disabled = !this.checked;
+            logTest(`Confirmation checkbox changed: ${this.checked}`);
+        };
+        
+        logTest('✅ Deletion information populated successfully');
+    }
+    
+    // Helper functions (copied from class.js)
+    function populateFieldsList(fields) {
+        const container = document.getElementById('fieldsToDeleteList');
+        container.innerHTML = '';
+        
+        if (fields.length === 0) {
+            container.innerHTML = '<div class="list-group-item text-muted">No fields to delete</div>';
+            return;
+        }
+        
+        fields.forEach(field => {
+            const item = document.createElement('div');
+            item.className = 'list-group-item d-flex justify-content-between align-items-start';
+            item.innerHTML = `
+                <div class="ms-2 me-auto">
+                    <div class="fw-bold">${field.GF_NAME}</div>
+                    <small class="text-muted">${field.GF_TYPE} - ${field.GF_DESCRIPTION || 'No description'}</small>
+                </div>
+                <span class="badge bg-danger rounded-pill">${field.GF_TYPE}</span>
+            `;
+            container.appendChild(item);
+        });
+        
+        logTest(`Populated ${fields.length} fields in the list`);
+    }
+    
+    function populateChildClassesList(childClasses) {
+        const container = document.getElementById('childClassesToDeleteList');
+        container.innerHTML = '';
+        
+        if (childClasses.length === 0) {
+            container.innerHTML = '<div class="list-group-item text-muted">No child classes to delete</div>';
+            return;
+        }
+        
+        childClasses.forEach(childClass => {
+            const item = document.createElement('div');
+            item.className = 'list-group-item d-flex justify-content-between align-items-start';
+            item.innerHTML = `
+                <div class="ms-2 me-auto">
+                    <div class="fw-bold">${childClass.FIELD_CLASS_NAME}</div>
+                    <small class="text-muted">${childClass.CLASS_TYPE}</small>
+                </div>
+                <span class="badge bg-warning rounded-pill">${childClass.FIELD_COUNT} fields</span>
+            `;
+            container.appendChild(item);
+        });
+        
+        logTest(`Populated ${childClasses.length} child classes in the list`);
+    }
+    
+    function populateRulesList(rules) {
+        const container = document.getElementById('rulesToUnlinkList');
+        container.innerHTML = '';
+        
+        if (rules.length === 0) {
+            container.innerHTML = '<div class="list-group-item text-muted">No rules using this field class</div>';
+            return;
+        }
+        
+        rules.forEach(rule => {
+            const item = document.createElement('div');
+            item.className = 'list-group-item d-flex justify-content-between align-items-start';
+            item.innerHTML = `
+                <div class="ms-2 me-auto">
+                    <div class="fw-bold">${rule.RULE_NAME}</div>
+                    <small class="text-muted">ID: ${rule.RULE_ID}</small>
+                </div>
+                <span class="badge bg-secondary rounded-pill">${rule.RULE_TYPE}</span>
+            `;
+            container.appendChild(item);
+        });
+        
+        logTest(`Populated ${rules.length} rules in the list`);
+    }
+    
+    function toggleSection(sectionId, show) {
+        const section = document.getElementById(sectionId);
+        if (section) {
+            section.style.display = show ? 'block' : 'none';
+        }
+    }
+    
+    function confirmDelete() {
+        logTest(`🚫 SIMULATED DELETE: Would delete class ${currentDeleteId} here`);
+        logTest('In real app, this would call the delete API endpoint');
+        
+        // Simulate success
+        deleteModal.hide();
+        logTest('✅ Simulated deletion completed successfully');
+    }
+</script>
+</body>
+</html>

@@ -16,19 +16,78 @@ def get_field_classes():
 
 @fields_bp.route('/get_fields')
 def get_fields():
-    # Join with field classes to get class name
-    fields = query_db('''
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    search = request.args.get('search', '', type=str)
+    class_filter = request.args.get('class_filter', '', type=str)
+    
+    # Base query for counting total records
+    count_query = '''
+        SELECT COUNT(*) as total
+        FROM GEE_FIELDS f 
+        LEFT JOIN GEE_FIELD_CLASSES fc ON f.GFC_ID = fc.GFC_ID
+    '''
+    
+    # Base query for fetching records
+    base_query = '''
         SELECT f.*, fc.FIELD_CLASS_NAME, fc.CLASS_TYPE
         FROM GEE_FIELDS f 
         LEFT JOIN GEE_FIELD_CLASSES fc ON f.GFC_ID = fc.GFC_ID
+    '''
+    
+    # Build WHERE clause and parameters
+    params = []
+    where_conditions = []
+    
+    if search:
+        where_conditions.append('(f.GF_NAME LIKE ? OR f.GF_TYPE LIKE ? OR f.GF_DESCRIPTION LIKE ? OR fc.FIELD_CLASS_NAME LIKE ?)')
+        search_param = f'%{search}%'
+        params.extend([search_param, search_param, search_param, search_param])
+    
+    if class_filter:
+        where_conditions.append('f.GFC_ID = ?')
+        params.append(class_filter)
+    
+    where_clause = ' WHERE ' + ' AND '.join(where_conditions) if where_conditions else ''
+    
+    # Get total count
+    total_query = count_query + where_clause
+    total_result = query_db(total_query, params, one=True)
+    total = total_result['total'] if total_result else 0
+    
+    # Calculate pagination
+    offset = (page - 1) * per_page
+    total_pages = (total + per_page - 1) // per_page
+    
+    # Fetch paginated data
+    data_query = base_query + where_clause + '''
         ORDER BY fc.FIELD_CLASS_NAME, f.GF_NAME
-    ''')
-    return jsonify([dict(field) for field in fields])
+        LIMIT ? OFFSET ?
+    '''
+    
+    fields = query_db(data_query, params + [per_page, offset])
+    
+    return jsonify({
+        'data': [dict(field) for field in fields],
+        'pagination': {
+            'page': page,
+            'per_page': per_page,
+            'total': total,
+            'total_pages': total_pages,
+            'has_prev': page > 1,
+            'has_next': page < total_pages
+        }
+    })
 
 @fields_bp.route('/get_fields_by_class/<int:class_id>')
 def get_fields_by_class(class_id):
     fields = query_db('SELECT * FROM GEE_FIELDS WHERE GFC_ID = ?', (class_id,))
     return jsonify([dict(field) for field in fields])
+
+@fields_bp.route('/get_child_classes/<int:parent_class_id>')
+def get_child_classes(parent_class_id):
+    child_classes = query_db('SELECT * FROM GEE_FIELD_CLASSES WHERE PARENT_GFC_ID = ?', (parent_class_id,))
+    return jsonify([dict(cls) for cls in child_classes])
 
 @fields_bp.route('/add_field', methods=['POST'])
 def add_field():

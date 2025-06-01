@@ -1,4 +1,4 @@
-from flask import Flask, g, render_template
+from flask import Flask, g, render_template, send_from_directory
 import os
 import uuid
 import sqlite3
@@ -32,18 +32,24 @@ def inject_runtime_id():
 # Add remaining routes that haven't been migrated to blueprints yet
 
 
-@app.route('/stations')
-def stations():
-    return render_template('stations.html', active_page='stations')
+# DISABLED: Stations functionality
+# @app.route('/stations')
+# def stations():
+#     return render_template('stations.html', active_page='stations')
 
 @app.route('/flow_designer')
 def flow_designer():
     return render_template('flow_designer.html', active_page='flow_designer')
 
+# Route to serve prototype files
+@app.route('/temp/<filename>')
+def serve_prototype(filename):
+    return send_from_directory('temp', filename)
+
 if __name__ == '__main__':
     # Initialize the app, including database setup
     init_db()
-    
+    app.run(host='0.0.0.0', port=5002, debug=True)
     # Log the app runtime ID
     print(f"Starting application with Runtime ID: {APP_RUNTIME_ID}")
     

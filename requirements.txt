@@ -9,4 +9,5 @@ MarkupSafe==3.0.2
 PyYAML==6.0.1
 mysql-connector-python==8.4.0
 psycopg2-binary==2.9.9
+PyYAML==6.0.1
 Werkzeug==3.1.3

@@ -384,6 +384,7 @@ function selectTableFromList() {
         
         // Set a basic SELECT query for the table
         queryInput.value = `SELECT * FROM ${tableInfo.actual_name}`;
+        
     } catch (error) {
         console.error('Error parsing table selection:', error);
         showToast('Error', 'Error selecting table', 'error');
@@ -559,6 +560,7 @@ function testQuery() {
     const query = document.getElementById('tableQuery').value;
     const connHandle = document.getElementById('currentConnection').value || currentConnectionHandle;
     const selectedEnvironmentId = document.getElementById('selectedEnvironmentId').value;
+    const environmentSelect = document.getElementById('environmentSelect');
     
     if (!query) {
         showToast('Warning', 'Please enter a query to test', 'warning');
@@ -579,10 +581,18 @@ function testQuery() {
     // Add connection handle if using external connection
     if (connHandle) {
         requestData.connection_handle = connHandle;
-    } else if (selectedEnvironmentId) {
+    } else if (selectedEnvironmentId && selectedEnvironmentId !== '') {
         // If no connection handle but we have a selected environment, use that
         requestData.environment_config_id = selectedEnvironmentId;
+    } else if (environmentSelect && environmentSelect.value !== '') {
+        // Fallback to environment select value if selectedEnvironmentId is not set
+        requestData.environment_config_id = environmentSelect.value;
     }
+    // If neither connection handle nor environment is selected, 
+    // the query will be executed on the internal database (default behavior)
+    
+    console.log('Query request data:', requestData);
+    
     
     // Show loading indicator
     document.getElementById('queryResults').classList.remove('d-none');
@@ -841,12 +851,6 @@ function startImport() {
 
 // Show toast notification
 function showToast(title, message, type = 'success') {
-    // Check if we have the showToast function from base.html
-    if (typeof window.showToast === 'function') {
-        window.showToast(title, message, type);
-        return;
-    }
-    
     // Fallback toast implementation
     const toast = document.createElement('div');
     toast.className = `toast position-fixed top-0 end-0 m-3 bg-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'warning'} text-white`;

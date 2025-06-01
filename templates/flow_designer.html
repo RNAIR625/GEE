@@ -23,13 +23,6 @@
     z-index: 1;
 }
   
-.rule-node {
-    background-color: #3498db;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 4px;
-    font-size: 0.875rem;
-}
   
 .rule-group-node {
     width: 200px;
@@ -52,35 +45,44 @@
     border-bottom-right-radius: 4px;
 }
   
-.station-node {
-    width: 240px;
-}
-  
-.station-header {
-    background-color: #9b59b6;
-    color: white;
-    padding: 10px;
-    border-top-left-radius: 4px;
-    border-top-right-radius: 4px;
-    font-weight: 500;
-}
-  
-.station-content {
-    background-color: #f5f0f7;
-    padding: 12px;
-    min-height: 80px;
-    border-bottom-left-radius: 4px;
-    border-bottom-right-radius: 4px;
-}
   
 .connector-line {
     stroke: #666;
     stroke-width: 2px;
     fill: none;
+    transition: all 0.2s ease;
+}
+
+.connector-line:hover {
+    filter: drop-shadow(0 0 4px rgba(0,0,0,0.3));
 }
   
 .selected-node {
     outline: 2px solid #3498db;
+}
+
+.component-node {
+    z-index: 10;
+    position: relative;
+}
+
+/* Enhanced connection styling */
+.connector-line {
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Connection type specific styles */
+.connector-line[stroke="#2ecc71"] {
+    filter: drop-shadow(0 0 2px rgba(46, 204, 113, 0.5));
+}
+
+.connector-line[stroke="#e74c3c"] {
+    filter: drop-shadow(0 0 2px rgba(231, 76, 60, 0.5));
+}
+
+.connector-line[stroke="#f39c12"] {
+    filter: drop-shadow(0 0 2px rgba(243, 156, 18, 0.5));
 }
 {% endblock %}
 
@@ -90,7 +92,16 @@
     <div class="d-flex justify-content-between align-items-center">
         <h2 class="mb-0">Function Flow Designer</h2>
         <div class="d-flex gap-2">
+            <div class="btn-group" role="group">
+                <button id="animateAllBtn" class="btn btn-outline-warning" title="Animate All Connections">
+                    <i class="fas fa-play"></i>
+                </button>
+                <button id="stopAnimationBtn" class="btn btn-outline-danger" title="Stop All Animations">
+                    <i class="fas fa-stop"></i>
+                </button>
+            </div>
             <button id="validateBtn" class="btn btn-outline-primary">Validate</button>
+            <button id="loadBtn" class="btn btn-outline-info">Load</button>
             <button id="importBtn" class="btn btn-outline-primary">Import</button>
             <button id="exportBtn" class="btn btn-outline-primary">Export</button>
             <button id="saveBtn" class="btn btn-success">Save</button>
@@ -109,44 +120,13 @@
             <input type="text" id="search-components" placeholder="Search components..." class="form-control form-control-sm">
         </div>
         
-        <!-- Rules Section -->
-        <div class="mb-4">
-            <h6 class="text-light-emphasis">Rules</h6>
-            <div class="d-flex flex-column gap-2">
-                <div class="bg-primary text-white p-2 rounded draggable-component" draggable="true" data-component-type="rule" data-component-id="1">
-                    Validate Email
-                </div>
-                <div class="bg-primary text-white p-2 rounded draggable-component" draggable="true" data-component-type="rule" data-component-id="2">
-                    Calculate Total
-                </div>
-                <div class="bg-primary text-white p-2 rounded draggable-component" draggable="true" data-component-type="rule" data-component-id="3">
-                    Format Address
-                </div>
-            </div>
-        </div>
-        
         <!-- Rule Groups Section -->
         <div class="mb-4">
             <h6 class="text-light-emphasis">Rule Groups</h6>
-            <div class="d-flex flex-column gap-2">
-                <div class="bg-success text-white p-2 rounded draggable-component" draggable="true" data-component-type="rule-group" data-component-id="1">
-                    Validation Group
-                </div>
-                <div class="bg-success text-white p-2 rounded draggable-component" draggable="true" data-component-type="rule-group" data-component-id="2">
-                    Calculation Group
-                </div>
-            </div>
-        </div>
-        
-        <!-- Stations Section -->
-        <div class="mb-4">
-            <h6 class="text-light-emphasis">Stations</h6>
-            <div class="d-flex flex-column gap-2">
-                <div class="bg-purple text-white p-2 rounded draggable-component" draggable="true" data-component-type="station" data-component-id="1" style="background-color: #9b59b6;">
-                    Input Processing
-                </div>
-                <div class="bg-purple text-white p-2 rounded draggable-component" draggable="true" data-component-type="station" data-component-id="2" style="background-color: #9b59b6;">
-                    Output Generation
+            <div id="rule-groups-palette" class="d-flex flex-column gap-2">
+                <!-- Rule groups will be loaded dynamically -->
+                <div class="text-center py-2 text-muted">
+                    <i class="fas fa-spinner fa-spin"></i> Loading rule groups...
                 </div>
             </div>
         </div>
@@ -157,11 +137,38 @@
         <!-- Canvas content will be populated by JavaScript -->
         
         <!-- SVG container for connections -->
-        <svg id="connections-container" class="position-absolute top-0 left-0 w-100 h-100" style="pointer-events: none;">
+        <svg id="connections-container" class="position-absolute top-0 left-0 w-100 h-100" style="pointer-events: none; z-index: 1;">
             <defs>
-                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                    <polygon points="0 0, 10 3.5, 0 7" fill="#666" />
+                <!-- Default arrow -->
+                <marker id="arrowhead" markerWidth="12" markerHeight="8" refX="10" refY="4" orient="auto" markerUnits="strokeWidth">
+                    <polygon points="0 0, 10 4, 0 8" fill="#666" stroke="#666" stroke-width="1" />
                 </marker>
+                
+                <!-- Success arrow (green) -->
+                <marker id="arrowhead-success" markerWidth="14" markerHeight="10" refX="12" refY="5" orient="auto" markerUnits="strokeWidth">
+                    <polygon points="0 0, 12 5, 0 10" fill="#2ecc71" stroke="#2ecc71" stroke-width="1" />
+                </marker>
+                
+                <!-- Failure arrow (red) -->
+                <marker id="arrowhead-failure" markerWidth="14" markerHeight="10" refX="12" refY="5" orient="auto" markerUnits="strokeWidth">
+                    <polygon points="0 0, 12 5, 0 10" fill="#e74c3c" stroke="#e74c3c" stroke-width="1" />
+                </marker>
+                
+                <!-- Conditional arrow (orange) -->
+                <marker id="arrowhead-conditional" markerWidth="16" markerHeight="12" refX="14" refY="6" orient="auto" markerUnits="strokeWidth">
+                    <polygon points="0 0, 12 6, 0 12, 4 6" fill="#f39c12" stroke="#f39c12" stroke-width="1" />
+                </marker>
+                
+                <!-- Animated flow indicators -->
+                <circle id="flow-dot-template" r="3" fill="#007bff" opacity="0.8">
+                    <animate attributeName="r" values="2;4;2" dur="1.5s" repeatCount="indefinite" />
+                </circle>
+                
+                <!-- Flow pulse animation -->
+                <circle id="flow-pulse-template" r="2" fill="#00ff00" opacity="0.7">
+                    <animate attributeName="opacity" values="0;1;0" dur="1s" repeatCount="indefinite" />
+                    <animate attributeName="r" values="2;6;2" dur="1s" repeatCount="indefinite" />
+                </circle>
             </defs>
             <!-- Connection paths will be added dynamically -->
         </svg>
@@ -172,9 +179,35 @@
         <h5 class="mb-3">Properties</h5>
         
         <!-- No Selection Message -->
-        <div id="no-selection" class="bg-white rounded shadow p-4 text-center text-muted">
-            <i class="fas fa-info-circle fa-2x mb-2"></i>
-            <p>Select a component to view its properties</p>
+        <div id="no-selection" class="bg-white rounded shadow p-4 text-muted">
+            <i class="fas fa-info-circle fa-2x mb-3 text-center d-block"></i>
+            <p class="text-center mb-3">Select a component to view its properties</p>
+            
+            <hr class="my-3">
+            
+            <h6 class="mb-2"><i class="fas fa-play text-warning"></i> Animation Controls</h6>
+            <small class="d-block mb-1"><strong>Double-click</strong> any connection to animate it</small>
+            <small class="d-block mb-1"><strong>Play button</strong> or press <kbd>A</kbd> to animate all</small>
+            <small class="d-block mb-1"><strong>Stop button</strong> or press <kbd>X</kbd> to stop animations</small>
+            
+            <hr class="my-3">
+            
+            <h6 class="mb-2"><i class="fas fa-link text-primary"></i> Create Connections</h6>
+            <small class="d-block mb-1"><strong>Method 1:</strong> Hold <kbd>Shift</kbd> + click two nodes</small>
+            <small class="d-block mb-1"><strong>Method 2:</strong> Right-click node → Connect To</small>
+            
+            <hr class="my-3">
+            
+            <h6 class="mb-2"><i class="fas fa-palette text-info"></i> Connection Types</h6>
+            <small class="d-block mb-1"><span class="badge bg-success">Success</span> - Green arrows at component edges</small>
+            <small class="d-block mb-1"><span class="badge bg-danger">Failure</span> - Red arrows at component edges</small>
+            <small class="d-block mb-1"><span class="badge bg-warning">Conditional</span> - Orange dashed arrows</small>
+            <small class="d-block"><span class="badge bg-secondary">Default</span> - Gray arrows</small>
+            
+            <hr class="my-3">
+            
+            <h6 class="mb-2"><i class="fas fa-bug text-warning"></i> Debug</h6>
+            <small class="d-block">Console: <code>testArrows()</code> to test arrow visibility</small>
         </div>
         
         <!-- Component Properties Form (Hidden by default) -->
@@ -229,6 +262,36 @@
             <div class="modal-footer">
                 <button id="cancel-save" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button id="confirm-save" class="btn btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Load Flow Modal -->
+<div id="load-modal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Load Saved Flow</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="flows-loading" class="text-center py-4">
+                    <i class="fas fa-spinner fa-spin"></i> Loading flows...
+                </div>
+                <div id="flows-list" class="d-none">
+                    <div class="row" id="flows-container">
+                        <!-- Flows will be loaded here -->
+                    </div>
+                </div>
+                <div id="no-flows" class="text-center py-4 d-none">
+                    <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No Saved Flows</h5>
+                    <p class="text-muted">Create your first flow and save it to see it here.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>

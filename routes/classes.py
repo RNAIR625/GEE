@@ -15,16 +15,75 @@ def class_page():
 
 @classes_bp.route('/get_classes')
 def get_classes():
-    classes = query_db('SELECT * FROM GEE_FIELD_CLASSES')
-    return jsonify([dict(cls) for cls in classes])
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    search = request.args.get('search', '', type=str)
+    
+    # Base query for counting total records
+    count_query = '''
+        SELECT COUNT(*) as total
+        FROM GEE_FIELD_CLASSES gfc
+        LEFT JOIN GEE_FIELD_CLASSES parent ON gfc.PARENT_GFC_ID = parent.GFC_ID
+    '''
+    
+    # Base query for fetching records
+    base_query = '''
+        SELECT 
+            gfc.*,
+            parent.FIELD_CLASS_NAME as PARENT_CLASS_NAME,
+            (SELECT COUNT(*) FROM GEE_FIELD_CLASSES child WHERE child.PARENT_GFC_ID = gfc.GFC_ID) as CHILD_COUNT
+        FROM GEE_FIELD_CLASSES gfc
+        LEFT JOIN GEE_FIELD_CLASSES parent ON gfc.PARENT_GFC_ID = parent.GFC_ID
+    '''
+    
+    # Add search filter if provided
+    params = []
+    where_clause = ''
+    if search:
+        where_clause = ' WHERE gfc.FIELD_CLASS_NAME LIKE ? OR gfc.CLASS_TYPE LIKE ? OR gfc.DESCRIPTION LIKE ?'
+        search_param = f'%{search}%'
+        params = [search_param, search_param, search_param]
+    
+    # Get total count
+    total_query = count_query + where_clause
+    total_result = query_db(total_query, params, one=True)
+    total = total_result['total'] if total_result else 0
+    
+    # Calculate pagination
+    offset = (page - 1) * per_page
+    total_pages = (total + per_page - 1) // per_page
+    
+    # Fetch paginated data
+    data_query = base_query + where_clause + '''
+        ORDER BY 
+            CASE WHEN gfc.PARENT_GFC_ID IS NULL THEN gfc.GFC_ID ELSE gfc.PARENT_GFC_ID END,
+            gfc.PARENT_GFC_ID IS NOT NULL,
+            gfc.FIELD_CLASS_NAME
+        LIMIT ? OFFSET ?
+    '''
+    
+    classes = query_db(data_query, params + [per_page, offset])
+    
+    return jsonify({
+        'data': [dict(cls) for cls in classes],
+        'pagination': {
+            'page': page,
+            'per_page': per_page,
+            'total': total,
+            'total_pages': total_pages,
+            'has_prev': page > 1,
+            'has_next': page < total_pages
+        }
+    })
 
 @classes_bp.route('/add_class', methods=['POST'])
 def add_class():
     data = request.json
     try:
+        parent_id = data.get('parentGfcId') if data.get('parentGfcId') else None
         modify_db(
-            'INSERT INTO GEE_FIELD_CLASSES (FIELD_CLASS_NAME, CLASS_TYPE, DESCRIPTION) VALUES (?, ?, ?)',
-            (data['className'], data['type'], data['description'])
+            'INSERT INTO GEE_FIELD_CLASSES (FIELD_CLASS_NAME, CLASS_TYPE, DESCRIPTION, PARENT_GFC_ID) VALUES (?, ?, ?, ?)',
+            (data['className'], data['type'], data['description'], parent_id)
         )
         return jsonify({'success': True, 'message': 'Class added successfully!'})
     except Exception as e:
@@ -34,9 +93,10 @@ def add_class():
 def update_class():
     data = request.json
     try:
+        parent_id = data.get('parentGfcId') if data.get('parentGfcId') else None
         modify_db(
-            'UPDATE GEE_FIELD_CLASSES SET FIELD_CLASS_NAME = ?, CLASS_TYPE = ?, DESCRIPTION = ?, UPDATE_DATE = ? WHERE GFC_ID = ?',
-            (data['className'], data['type'], data['description'], datetime.now(), data['gfcId'])
+            'UPDATE GEE_FIELD_CLASSES SET FIELD_CLASS_NAME = ?, CLASS_TYPE = ?, DESCRIPTION = ?, PARENT_GFC_ID = ?, UPDATE_DATE = ? WHERE GFC_ID = ?',
+            (data['className'], data['type'], data['description'], parent_id, datetime.now(), data['gfcId'])
         )
         return jsonify({'success': True, 'message': 'Class updated successfully!'})
     except Exception as e:
@@ -52,6 +112,164 @@ def delete_class(gfc_id):
         
         modify_db('DELETE FROM GEE_FIELD_CLASSES WHERE GFC_ID = ?', (gfc_id,))
         return jsonify({'success': True, 'message': 'Class deleted successfully!'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@classes_bp.route('/get_class_deletion_info/<int:gfc_id>', methods=['GET'])
+def get_class_deletion_info(gfc_id):
+    """Get information about what will be deleted when removing a field class"""
+    try:
+        # Get field class information
+        field_class = query_db('''
+            SELECT fc.*, parent.FIELD_CLASS_NAME as PARENT_CLASS_NAME
+            FROM GEE_FIELD_CLASSES fc
+            LEFT JOIN GEE_FIELD_CLASSES parent ON fc.PARENT_GFC_ID = parent.GFC_ID
+            WHERE fc.GFC_ID = ?
+        ''', (gfc_id,), one=True)
+        
+        if not field_class:
+            return jsonify({'success': False, 'message': 'Field class not found'})
+        
+        # Get associated fields
+        fields = query_db('''
+            SELECT GF_ID, GF_NAME, GF_TYPE, GF_DESCRIPTION
+            FROM GEE_FIELDS 
+            WHERE GFC_ID = ?
+            ORDER BY GF_NAME
+        ''', (gfc_id,))
+        
+        # Get child classes
+        child_classes = query_db('''
+            SELECT GFC_ID, FIELD_CLASS_NAME, CLASS_TYPE,
+                   (SELECT COUNT(*) FROM GEE_FIELDS WHERE GFC_ID = fc.GFC_ID) as FIELD_COUNT
+            FROM GEE_FIELD_CLASSES fc
+            WHERE PARENT_GFC_ID = ?
+            ORDER BY FIELD_CLASS_NAME
+        ''', (gfc_id,))
+        
+        # Calculate total fields that will be deleted (including from child classes)
+        total_fields = len(fields) if fields else 0
+        child_fields_total = 0
+        
+        for child in (child_classes or []):
+            child_fields_total += child['FIELD_COUNT']
+        
+        total_fields += child_fields_total
+        
+        # Get rules that might be using this class
+        rules_using_class = query_db('''
+            SELECT r.RULE_ID, r.RULE_NAME, r.RULE_TYPE
+            FROM GEE_RULES r
+            WHERE r.GFC_ID = ?
+            ORDER BY r.RULE_NAME
+        ''', (gfc_id,))
+        
+        deletion_info = {
+            'success': True,
+            'field_class': dict(field_class),
+            'fields': [dict(field) for field in fields] if fields else [],
+            'child_classes': [dict(child) for child in child_classes] if child_classes else [],
+            'rules_using_class': [dict(rule) for rule in rules_using_class] if rules_using_class else [],
+            'totals': {
+                'fields_count': len(fields) if fields else 0,
+                'child_classes_count': len(child_classes) if child_classes else 0,
+                'child_fields_count': child_fields_total,
+                'total_fields_count': total_fields,
+                'rules_using_count': len(rules_using_class) if rules_using_class else 0
+            }
+        }
+        
+        return jsonify(deletion_info)
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@classes_bp.route('/delete_class_with_fields/<int:gfc_id>', methods=['DELETE'])
+def delete_class_with_fields(gfc_id):
+    """Delete a field class along with all its associated fields and child classes"""
+    try:
+        # Get field class information for confirmation
+        field_class = query_db('''
+            SELECT FIELD_CLASS_NAME, CLASS_TYPE
+            FROM GEE_FIELD_CLASSES
+            WHERE GFC_ID = ?
+        ''', (gfc_id,), one=True)
+        
+        if not field_class:
+            return jsonify({'success': False, 'message': 'Field class not found'})
+        
+        # Start transaction-like deletion (SQLite autocommit, but we'll track what we delete)
+        deleted_items = {
+            'fields': 0,
+            'child_fields': 0,
+            'child_classes': 0,
+            'rules': 0
+        }
+        
+        # First, recursively delete child classes and their fields
+        child_classes = query_db('''
+            SELECT GFC_ID, FIELD_CLASS_NAME
+            FROM GEE_FIELD_CLASSES
+            WHERE PARENT_GFC_ID = ?
+        ''', (gfc_id,))
+        
+        for child in (child_classes or []):
+            # Delete fields of child class
+            child_fields_count = query_db('''
+                SELECT COUNT(*) as count FROM GEE_FIELDS WHERE GFC_ID = ?
+            ''', (child['GFC_ID'],), one=True)
+            
+            if child_fields_count and child_fields_count['count'] > 0:
+                modify_db('DELETE FROM GEE_FIELDS WHERE GFC_ID = ?', (child['GFC_ID'],))
+                deleted_items['child_fields'] += child_fields_count['count']
+            
+            # Delete child class
+            modify_db('DELETE FROM GEE_FIELD_CLASSES WHERE GFC_ID = ?', (child['GFC_ID'],))
+            deleted_items['child_classes'] += 1
+        
+        # Delete rules that use this class (set GFC_ID to NULL or delete if required)
+        rules_using_class = query_db('''
+            SELECT COUNT(*) as count FROM GEE_RULES WHERE GFC_ID = ?
+        ''', (gfc_id,), one=True)
+        
+        if rules_using_class and rules_using_class['count'] > 0:
+            # Set GFC_ID to NULL instead of deleting rules
+            modify_db('UPDATE GEE_RULES SET GFC_ID = NULL WHERE GFC_ID = ?', (gfc_id,))
+            deleted_items['rules'] = rules_using_class['count']
+        
+        # Delete fields of the main class
+        fields_count = query_db('''
+            SELECT COUNT(*) as count FROM GEE_FIELDS WHERE GFC_ID = ?
+        ''', (gfc_id,), one=True)
+        
+        if fields_count and fields_count['count'] > 0:
+            modify_db('DELETE FROM GEE_FIELDS WHERE GFC_ID = ?', (gfc_id,))
+            deleted_items['fields'] = fields_count['count']
+        
+        # Finally, delete the main field class
+        modify_db('DELETE FROM GEE_FIELD_CLASSES WHERE GFC_ID = ?', (gfc_id,))
+        
+        # Create summary message
+        summary_parts = []
+        if deleted_items['fields'] > 0:
+            summary_parts.append(f"{deleted_items['fields']} field(s)")
+        if deleted_items['child_classes'] > 0:
+            summary_parts.append(f"{deleted_items['child_classes']} child class(es)")
+        if deleted_items['child_fields'] > 0:
+            summary_parts.append(f"{deleted_items['child_fields']} child field(s)")
+        if deleted_items['rules'] > 0:
+            summary_parts.append(f"{deleted_items['rules']} rule(s) unlinked")
+        
+        summary_message = f"Field class '{field_class['FIELD_CLASS_NAME']}' deleted successfully"
+        if summary_parts:
+            summary_message += f" along with {', '.join(summary_parts)}"
+        
+        return jsonify({
+            'success': True, 
+            'message': summary_message,
+            'deleted_items': deleted_items
+        })
+        
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
@@ -103,13 +321,25 @@ def parse_swagger():
         else:
             return jsonify({'success': False, 'message': 'No file provided'})
         
+        # Check if file_content is valid
+        if not file_content or file_content.strip() == '':
+            return jsonify({'success': False, 'message': 'File is empty or could not be read'})
+        
         # Parse the Swagger file
-        swagger_data = parser.parse_file(file_content, file_type)
+        try:
+            swagger_data = parser.parse_file(file_content, file_type)
+            if not swagger_data:
+                return jsonify({'success': False, 'message': 'Failed to parse file content - file may be corrupted or invalid'})
+        except Exception as parse_error:
+            return jsonify({'success': False, 'message': f'Error parsing file: {str(parse_error)}'})
         
         # Validate the file
-        is_valid, errors = parser.validate_swagger_file()
-        if not is_valid:
-            return jsonify({'success': False, 'message': 'Invalid Swagger file: ' + ', '.join(errors)})
+        try:
+            is_valid, errors = parser.validate_swagger_file()
+            if not is_valid:
+                return jsonify({'success': False, 'message': 'Invalid Swagger file: ' + ', '.join(errors)})
+        except Exception as validation_error:
+            return jsonify({'success': False, 'message': f'Error validating file: {str(validation_error)}'})
         
         # Extract field classes and fields
         field_classes = parser.extract_field_classes_and_fields()
@@ -223,13 +453,9 @@ def import_swagger():
             )
             stats['classes_created'] += 1
         
-        # Create schema-specific field classes (properly organized)
+        # Create schema-specific field classes as children of the main API class
         field_classes = swagger_data.get('field_classes', [])
         for fc in field_classes:
-            # Skip error schemas unless explicitly requested
-            if 'error' in fc['name'].lower() and fc['type'] == 'ERROR':
-                continue
-                
             # Create class name with schema suffix
             fc_name = f"{class_name}_{fc['name']}"
             existing_fc = query_db(
@@ -238,9 +464,12 @@ def import_swagger():
             )
             
             if not existing_fc:
+                # Set the parent_id to the main API class for REQUEST/RESPONSE/ERROR classes
+                parent_id = main_class_id if fc['type'] in ['REQUEST', 'RESPONSE', 'ERROR'] else None
+                
                 fc_id = modify_db(
-                    'INSERT INTO GEE_FIELD_CLASSES (FIELD_CLASS_NAME, CLASS_TYPE, DESCRIPTION) VALUES (?, ?, ?)',
-                    (fc_name, fc['type'], fc['description']),
+                    'INSERT INTO GEE_FIELD_CLASSES (FIELD_CLASS_NAME, CLASS_TYPE, DESCRIPTION, PARENT_GFC_ID) VALUES (?, ?, ?, ?)',
+                    (fc_name, fc['type'], fc['description'], parent_id),
                     get_lastrowid=True
                 )
                 stats['classes_created'] += 1
