@@ -1,0 +1,25 @@
+[Unit]
+Description=GEE Forge - Python Rules Engine
+After=network.target
+
+[Service]
+Type=simple
+User=gee
+Group=gee
+WorkingDirectory=/opt/gee/Forge
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+ExecStart=/usr/bin/python3 app.py
+Restart=on-failure
+RestartSec=10
+StandardOutput=append:/var/log/gee/forge.log
+StandardError=append:/var/log/gee/forge.error.log
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/gee/Forge/instance
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,382 @@
+Design of the SLEP 
+
+1. Webpage to create JSON document with the details of execution 
+  b. Which JSON document has to be used for processing with determined by which URL the call has been initiated.
+
+
+2. Backend design 
+
+
+  0. Generate Code which  can integrated into proxygen code 
+  
+  # Generate Python for the below steps 
+  # This Python code should be able to integrate into a Flask framework
+  1. Generate dummy functions with name 
+     a. saveFile
+	 b. callModel
+	 c. Validatation
+	 d. addVariables
+
+  2. Load JSON document from file "Sample.json".
+  3. Loop over each element of the JSON document.
+  4. Extract and Print function Name from each element of the JSON
+  5. Call Function as provided by above step.
+  6. If the useThread == '1' the below code needs to be executed within a thread and not part of the main prcoess.
+     1. Check for mandatory element method . 
+		If method == 'remoteCall' . use value in the element "url" to invoke a curl call.
+	
+	
+	JS Code for the below .
+	
+	1. Page will have a right side bar which will hold the below tree
+		Function 
+		Modules 
+		
+		
+		the table 
+		
+		
+		
+		
+=============================================================================================================================
+
+
+Table Design 
+
+
+
+
+
+Execution engine plan. 
+
+	Tables one in which the all the operations are listed say if I have a compare, 
+	I create entry in that table for mem compare and two parameters. 
+	Though an interface enter  parameter parameter to the addresses. And it will be a second number.
+
+A string, copy string, compare whatever manipulation any function that is required and its parameter. Everything has to be passed by reference. And, Function number has to be passed over there. This is all for the native function as well as worthy. Uh, conferable functions and that will come over configuration functions.
+
+I mean, there are different functions that will be added. And no, I don't think there should be a conceptions, only test the function for every parameter. And direct. And there will be a wrapper of this function to be executed. And, That is essentially this one and the execution itself can be controlled very simply.
+
+The Json document, it converted into an insert into multiple inserts. Depends. Where we just specify that. Whoever is the successor or a particular. Gets executed together in parallel. It could be one or it could be 20 for all I care. Each of them will be. If each of them will have indicator which which will specify, whether it requires to have, Whether it requires to have a, what do you say?
+
+Uh multi-Treaded interface, a threading interface or not. For example, every external function call will be Will be in work from within a thread and every native function will not be involved with method because it's a measurable thing. Correct? Yeah, that is good. And we need a third table. In which?
+
+We specify all the variables. So, a user can Define variables in the execution. And so if supposing you define a variable which, for example is, With a file name, okay? So you want to specify, you want to write A request into a file. So that file name will be available, it can be composed of Uh, say a prefix which is hard coded, that itself will be stored as a separate variable with by Uh and subsequently the date parameter.
+
+If it has to be graduated, first permanent at runtime, that will be an action and that will also be payable the concatenation and storing into another variable will also be done concatenation of the file name. Itself will be an area, the native file system or the more path name will also be another variable.
+
+We need to be able to do this. And, Yes. And I will have Clarity activities, can be done. Everything has to be run by native functions every evaluation function should also be having a negative function. We should be able to have multiple combinations of Um, What do you say?
+
+Multiple combinations of Comparisons. So that in the end, we create a graph. And the graphics recorded by the stem of the, by the execution engine. How do and execution engine as I have explained? And this require, Produces a successor logic much like how control M is run?
+
+Uh, realization document. Go to. Uh, take a single Depth first approach in doing research and inserting into the table. Looking at the Maximum number of levels first inside the entire tree, create tree in memory. First. And looking at the total number of Ah, nodes. We keep creating the create map of all the number of nodes and all the number of depth of the nodes and the breadth of the nodes and subsequently uncertainty table with these values.
+
+And the execution engine will be able to understand that who are the successors. And who are the prison sisters once each successor and all the president successes are arrived. Only then we get there. Now, you don't need to render that table or that Jason. We would require to have an interface.
+
+I guess that should be the first. No, it should be a parallel activity. We need I need to create a simple.
+
+Node. This enter case where I can do this. And create the graph. I think that's to be forwarded.
+
+
+=============================================================================================================================
+
+
+
+I am trying to create a browser based tool for programmers . 
+This tool is for configuring functional flows. 
+I have designed some webpages using Draw.IO and the backend table scheme in SQlite , will you be able to generate webpages in Python and provide your sugestions. 
+
+
+I have set of images in my word document 
+I need to webpages on the basis of these images. 
+These pages need to be servered from the python flask implementation .
+I have provided the backend table and it's relationship as the last image in the document. 
+These tables are going to be hosted on sqlite db. "SLEP.db"
+i want to use the co pilot and VS code to generate and this front end page .
+advice on the best way to proceed with this project. 
+
+
+=============================================================================================================================
+I have pasted the a relationship diagram of the tables . These tables are to be hosted in SQLite  , 
+Please create DDL statements for the tables. 
+Also give test data for each tables in the form of insert statements .
+
+=============================================================================================================================
+The image contains the wireframe of the page "Class" 
+The page will correspond to the  table GEE_FIELD_CLASSES. Structure has been provided below. 
+I want you to create a FLASK application which retrieve and display the information from the below table hosted within "SLEP.DB". 
+Do not use SQL ALCHEMY for database operations . 
+
+The button "New" should open up a new layer int]o which the user will be able to create new "Classes". This will result new data inserted into GEE_FIELD_CLASSES.
+Please retain the TABs in the left hand side of the image. 
+
+CREATE TABLE GEE_FIELD_CLASSES (
+    GFC_ID INTEGER PRIMARY KEY,
+    GFC_IS INTEGER,
+    FIELD_CLASS_NAME TEXT NOT NULL,
+    CLASS_TYPE TEXT NOT NULL,
+    CREATE_DATE DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UPDATE_DATE DATETIME,
+    DESCRIPTION TEXT
+);
+=============================================================================================================================
+
+
+Using claude , Please extend the current webpage and follow the same format.  
+
+The "C:\Users\rnair\LinuxSharedFS\SLEP\PistacheBased\ThirdProject\Images\Fields.png" contains the wireframe of the page "Fields"  which is the second tab in the earlier webpage. 
+The page will correspond to the  table GEE_FIELDS. Structure has been provided below. 
+The actions should be consistent with first page for "Class". 
+The application will by default open on the "Class". Clicking on the "Fields" tab on panel on the left will navigate to this page. 
+Please retain the TABs in the left hand side of the image. 
+
+CREATE TABLE GEE_FIELDS (
+    GF_ID INTEGER PRIMARY KEY,
+    GFC_ID INTEGER,
+    GF_NAME TEXT NOT NULL,
+    GF_TYPE TEXT NOT NULL,
+    GF_SIZE INTEGER,
+    GF_PRECISION_SIZE INTEGER,
+    GF_DEFAULT_VALUE TEXT,
+    CREATE_DATE DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UPDATE_DATE DATETIME,
+    GF_DESCRIPTION TEXT,
+    FOREIGN KEY (GFC_ID) REFERENCES GEE_FIELD_CLASSES(GFC_ID)
+);
+
+
+=============================================================================================================================
+
+I am facing the following problems
+1. Although , the Tab Class is working fine but on clicking the Fields Tab , the page is not navigating to the Fields Page. 
+2. Code for Fields TAB should correspond to the GEE_FIELDS tab. 
+3. The webpage layout and the function like select and display from the tab . Delete update and edit needs to supported . 
+
+CREATE TABLE GEE_FIELDS (
+    GF_ID INTEGER PRIMARY KEY,
+    GFC_ID INTEGER,
+    GF_NAME TEXT NOT NULL,
+    GF_TYPE TEXT NOT NULL,
+    GF_SIZE INTEGER,
+    GF_PRECISION_SIZE INTEGER,
+    GF_DEFAULT_VALUE TEXT,
+    CREATE_DATE DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UPDATE_DATE DATETIME,
+    GF_DESCRIPTION TEXT,
+    FOREIGN KEY (GFC_ID) REFERENCES GEE_FIELD_CLASSES(GFC_ID)
+);
+=============================================================================================================================
+
+
+Hi 
+
+I have used Claude to create app.py fields.html . base.html , class.html  .
+I want to create new Pages 
+	a. "Function" wire frame "Function.png" which correspond to the below 2 table structures. GEE_BASE_FUNCTIONS  and GEE_BASE_FUNCTIONS_PARAMS has  a 1 to many relationship 
+		CREATE TABLE GEE_BASE_FUNCTIONS (
+			GBF_ID INTEGER PRIMARY KEY,
+			FUNC_NAME TEXT NOT NULL,
+			PARAM_COUNT INTEGER,
+			CREATE_DATE DATETIME DEFAULT CURRENT_TIMESTAMP,
+			UPDATE_DATE DATETIME,
+			DESCRIPTION TEXT
+		);
+
+		-- GEE_BASE_FUNCTIONS_PARAMS table
+		CREATE TABLE GEE_BASE_FUNCTIONS_PARAMS (
+			GBFP_ID INTEGER PRIMARY KEY,
+			GBF_ID INTEGER,
+			GBF_SEQ INTEGER,
+			PARAM_NAME TEXT NOT NULL,
+			PARAM_TYPE TEXT NOT NULL,
+			CREATE_DATE DATETIME DEFAULT CURRENT_TIMESTAMP,
+			UPDATE_DATE DATETIME,
+			DESCRIPTION TEXT,
+			FOREIGN KEY (GBF_ID) REFERENCES GEE_BASE_FUNCTIONS(GBF_ID)
+		);
+
+
+
+	b. "Rules Group" wire frame "RulesGroup.png" which correspond to the below table structure 
+		CREATE TABLE GEE_RULES_GROUPS (
+			GRG_ID INTEGER PRIMARY KEY,
+			GROUP_NAME TEXT NOT NULL,
+			COND_TYPE TEXT,
+			GRG_ID_PARENT INTEGER,
+			GRG_ID_CHILD INTEGER,
+			COND_GRG_ID_START INTEGER,
+			COND_GRG_ID_END INTEGER,
+			ACT_GRG_ID_START INTEGER,
+			ACT_GRG_ID_END INTEGER,
+			CREATE_DATE DATETIME DEFAULT CURRENT_TIMESTAMP,
+			UPDATE_DATE DATETIME,
+			DESCRIPTION TEXT
+		);
+	b. "Rules" wire frame "Rules.png" which correspond to the below table structure 
+		CREATE TABLE GEE_RULES_DEF (
+			GRD_ID INTEGER PRIMARY KEY,
+			GBF_ID INTEGER,
+			GBF_SEQ INTEGER,
+			PARAM_NAME TEXT NOT NULL,
+			PARAM_TYPE TEXT NOT NULL,
+			CREATE_DATE DATETIME DEFAULT CURRENT_TIMESTAMP,
+			UPDATE_DATE DATETIME,
+			DESCRIPTION TEXT,
+			FOREIGN KEY (GBF_ID) REFERENCES GEE_BASE_FUNCTIONS(GBF_ID)
+		);		
+	c. "TABLES" wire frame "Tables.png" which correspond to the below table structure 
+		CREATE TABLE GEE_TABLES (
+			GT_ID INTEGER PRIMARY KEY,
+			ENV_NAME TEXT NOT NULL,
+			DB_NAME TEXT NOT NULL,
+			DB_PASSWORD TEXT,
+			DB_INSTANCE TEXT,
+			DB_PORT INTEGER,
+			LINUX_USER TEXT,
+			LINUX_PASSWORD TEXT,
+			LINUX_HOST TEXT
+		);
+		
+		
+		
+		From the execution perspective 		
+		
+I want to represent data flow  through multiple stations and modules.
+I want to be able to drag and drop to a canvas rules , rule groups and stations which are a group of rule groups.
+Give me some suggestion on how to organize this. GIve mem some mockups 
+
+
+generate an xml doc which I can load into draw.io . I will further refine the representtion you provide 
+		
+		
+I want create a  set of 7 pages served from flask application .
+This is first page , this page will show the data from the table structure defined in the following prompt. 
+The Tab "Class" will fetch and display the information from table GEE_TABLES  . 
+
+
+I want create a flask application which fetch the information from the sqlite instance "SLEP.db"
+The attached code is for a new tool I am building where the user is able to define  : Class , Fields , Functions, Rule , Rule Groups and Stations 
+I want to represent data flow  through multiple stations and modules.
+I want to be able to drag and drop to a canvas rules , rule groups and stations which are a group of rule groups.
+I have provided the sql queries and the python Flask code as well as the html files 
+I want all the code to be properly arranged to use the same theme with all  modules navigatable from the side bar.
+
+
+1. Add another page to the side bar "ENV Config" which will reflect the below table in sqlite . 
+   This page will contain information about tables on which lookup can performed on while rules and rule groups are executed 
+   Give app.py and env_config.html ( Also , env_config.js if needed )
+   There needs to be a connect button. a handle needs to be created and stored for the connection
+  
+
+CREATE TABLE IF NOT EXISTS GEE_ENV_CONFIG (
+    GT_ID INTEGER PRIMARY KEY,
+    ENV_NAME TEXT NOT NULL,
+    DB_NAME TEXT NOT NULL,
+    DB_PASSWORD TEXT,
+    DB_INSTANCE TEXT,
+	DB_TYPE TEXT, -- ('Oracle', 'Postgres', 'SQLite')
+    DB_PORT INTEGER,
+    LINUX_USER TEXT,
+    LINUX_PASSWORD TEXT,
+    LINUX_HOST TEXT
+);
+
+I want you to critique the code for the below requirement.
+I want create a flask application which fetch the information from the sqlite instance "SLEP.db"
+The attached code is for a new tool I am building where the user is able to define  : Class , Fields , Functions, Rule , Rule Groups and Stations 
+I want to represent data flow  through multiple stations and modules.
+I want to be able to drag and drop to a canvas rules , rule groups and stations which are a group of rule groups.
+I have provided the sql queries and the python Flask code as well as the html files 
+I want all the code to be properly arranged to use the same theme with all  modules navigatable from the side bar. 
+I want the code to regenerated for tables so that connection handle from ENV Config is utilized for showing the details of the tables.
+Also I want the table structure from the run time to ENV to be presisted in the internal tables. 
+
+
+Please review the code for ENV config. 
+I tried to connect to "sqlite_runtime.db" which displays that the connection was sucessfull but "Store Connection" button does not seems to be working . since the pop up does not disppear . Also no new table is created in GEE_ENV_CONFIG 
+
+
+source /opt/enncrypto/enn_312/bin/activate
+cd LinuxSharedFS/SLEP/PistacheBased/FourthProjectUbuntu/
+nvm use v23.8.0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+I have attached the code for the low code tool
+I want a simple use case for this tool 
+Rules are organized under Rule Groups
+Rule Groups are organized and orchastrated under stations
+
+I want you to think up a good simple use case . Further development of the backend processes will be based on these use cases 
+
+
+
+
+
+
+
+1. Enhance the app.py to use the Oracle Connectivity which can be adopted from Check_db_connection.py
+2. Load Oracle Libraries from the LD_LIBRARY_PATH
+3. The app.py needs to have ability to generate a unique APP_RUNTIME_ID . 
+4. The App needs to persist and use connections on GEE_ACTIVE_CONNECTIONS . 
+5. Entries should be created and retrieved on this basis of  APP_RUNTIME_ID . This will ensure that app only displays connections where we created by the current running app
+
+Act as Meterials Expert 
+
+
+1. You will generate the following sections:
+
+"
+**Prompt:**
+The following is the table structure in SQLlite
+
+
+
+The above tables will present in the file 'SLEP.db'.
+I want a python Flask Program which will Open and work on the sqlite file 'SLEP.db'.
+For each Table I want a seperate url to get data from the table and another url for inserting or updating an entry in the table. 
+One main Page which will show all the tables in the Database. 
+
+Additionallly I want a front end NPM webpage which will do the following 
+	
+	This Server will be able to connect to the URLs in the Flask Server 
+	
+    1. I want one Main Page which will have the names of each of the below tables. 
+	2. Clicking on the buttons  for each navigate for the below sub pages. 	
+	3. The Sub Pages are seperate webpages for each table. 
+		a.  Fetch top 10 records from the SQLlite table . 
+		b.  Create button "New"
+		c.  Fetch Strucute of the selected and show a empty table
+		c. 	Save Button which insert the values typed by me into the SQLlitetable.
+
+**Critique:**
+{provide a concise paragraph on how to improve the prompt. Be very critical in your response. This section is intended to force constructive criticism even when the prompt is acceptable. Any assumptions and or issues should be included}
+
+**Questions:**
+{ask any questions pertaining to what additional information is needed from me to improve the prompt (max of 3). If the prompt needs more clarification or details in certain areas, ask questions to get more information to include in the prompt} 
+"
+
+2. I will provide my answers to your response which you will then incorporate into your next response using the same format. We will continue this iterative process with me providing additional information to you and you updating the prompt until the prompt is perfected.
+
+Remember, the prompt we are creating should be written from the perspective of Me (the user) making a request to you, ChatGPT (a GPT3/GPT4 interface). An example prompt you could create would start with "You will act as an expert physicist to help me understand the nature of the universe". 
+
+Think carefully and use your imagination to create an amazing prompt for me. 
+
+Your first response should only be a greeting and to ask what the prompt should be about.
+
+

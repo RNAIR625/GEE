@@ -1,0 +1,27 @@
+[Unit]
+Description=GEE Praxis - Go Rules Execution Engine
+After=network.target gee-forge.service
+Wants=gee-forge.service
+
+[Service]
+Type=simple
+User=gee
+Group=gee
+WorkingDirectory=/opt/gee/Praxis
+Environment="PATH=/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStartPre=/bin/bash -c 'if [ ! -f praxis ]; then go build -o praxis cmd/praxis/main.go; fi'
+ExecStart=/opt/gee/Praxis/praxis
+Restart=on-failure
+RestartSec=10
+StandardOutput=append:/var/log/gee/praxis.log
+StandardError=append:/var/log/gee/praxis.error.log
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/gee/Praxis/data
+
+[Install]
+WantedBy=multi-user.target

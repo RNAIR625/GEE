@@ -1,0 +1,14 @@
+# Port configuration for GEE services
+forge:
+  host: localhost
+  port: 5000
+  description: "Forge Python Rules Engine"
+
+praxis:
+  host: localhost
+  port: 8080
+  description: "Praxis Go Rules Execution Engine"
+  api_endpoints:
+    upload_db: "/api/v1/database/upload"
+    health: "/api/v1/health"
+    status: "/api/v1/status"

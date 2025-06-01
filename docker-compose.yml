@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  forge:
+    build:
+      context: ./Forge
+      dockerfile: Dockerfile
+    container_name: gee-forge
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./Forge/instance:/app/instance
+      - ./logs:/app/logs
+      - ./Config:/app/config:ro
+    environment:
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+    networks:
+      - gee-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  praxis:
+    build:
+      context: ./Praxis
+      dockerfile: Dockerfile
+    container_name: gee-praxis
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./Praxis/data:/app/data
+      - ./logs:/app/logs
+      - ./Config:/app/config:ro
+    environment:
+      - PRAXIS_CONFIG=/app/configs/praxis.yaml
+    networks:
+      - gee-network
+    restart: unless-stopped
+    depends_on:
+      - forge
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  gee-network:
+    driver: bridge
+
+volumes:
+  forge-data:
+  praxis-data:
