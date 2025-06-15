@@ -1,0 +1,314 @@
+{
+  "ecommerce_loyalty_api_payloads": {
+    "description": "JSON payloads for E-commerce Loyalty System API endpoints",
+    "base_url": "http://localhost:8080/ecommerce/loyalty/v1",
+    "sample_ids": {
+      "customer_id": "550e8400-e29b-41d4-a716-446655440000",
+      "order_id": "123e4567-e89b-12d3-a456-426614174000",
+      "admin_user_id": "admin-550e8400-e29b-41d4-a716-446655440001"
+    },
+    "endpoints": {
+      "create_customer": {
+        "method": "POST",
+        "path": "/customers",
+        "payload": {
+          "email": "jane.smith@example.com",
+          "firstName": "Jane",
+          "lastName": "Smith",
+          "preferences": {
+            "emailNotifications": true,
+            "smsNotifications": false,
+            "preferredCategories": ["Electronics", "Clothing"]
+          }
+        },
+        "variations": [
+          {
+            "description": "Minimal customer",
+            "payload": {
+              "email": "minimal@example.com",
+              "firstName": "Min",
+              "lastName": "User"
+            }
+          },
+          {
+            "description": "Customer with all preferences",
+            "payload": {
+              "email": "full@example.com",
+              "firstName": "Full",
+              "lastName": "User",
+              "preferences": {
+                "emailNotifications": true,
+                "smsNotifications": true,
+                "preferredCategories": ["Electronics", "Clothing", "Home & Garden", "Sports"]
+              }
+            }
+          }
+        ]
+      },
+      "update_customer": {
+        "method": "PUT",
+        "path": "/customers/{customerId}",
+        "payload": {
+          "email": "jane.smith.updated@example.com",
+          "firstName": "Jane",
+          "lastName": "Smith-Johnson",
+          "preferences": {
+            "emailNotifications": false,
+            "smsNotifications": true,
+            "preferredCategories": ["Electronics", "Home & Garden"]
+          }
+        },
+        "variations": [
+          {
+            "description": "Update email only",
+            "payload": {
+              "email": "newemail@example.com"
+            }
+          },
+          {
+            "description": "Update preferences only",
+            "payload": {
+              "preferences": {
+                "emailNotifications": false,
+                "smsNotifications": false,
+                "preferredCategories": ["Books"]
+              }
+            }
+          }
+        ]
+      },
+      "process_order": {
+        "method": "POST",
+        "path": "/orders",
+        "payload": {
+          "customerId": "550e8400-e29b-41d4-a716-446655440000",
+          "items": [
+            {
+              "productId": "LAPTOP-HP-15-2024",
+              "name": "HP Laptop 15-inch",
+              "price": 75.00,
+              "quantity": 2,
+              "category": "Electronics",
+              "isPromotional": true
+            },
+            {
+              "productId": "MOUSE-LOGITECH-MX",
+              "name": "Logitech MX Master Mouse",
+              "price": 99.99,
+              "quantity": 1,
+              "category": "Electronics",
+              "isPromotional": false
+            }
+          ],
+          "subtotal": 249.99,
+          "orderDate": "2024-06-08T15:30:00Z"
+        },
+        "variations": [
+          {
+            "description": "Single item order",
+            "payload": {
+              "customerId": "550e8400-e29b-41d4-a716-446655440000",
+              "items": [
+                {
+                  "productId": "BOOK-PROGRAMMING-101",
+                  "name": "Programming 101",
+                  "price": 29.99,
+                  "quantity": 1,
+                  "category": "Books",
+                  "isPromotional": false
+                }
+              ],
+              "subtotal": 29.99
+            }
+          },
+          {
+            "description": "Large order with mixed categories",
+            "payload": {
+              "customerId": "550e8400-e29b-41d4-a716-446655440000",
+              "items": [
+                {
+                  "productId": "SHIRT-NIKE-L",
+                  "name": "Nike Sport Shirt",
+                  "price": 45.00,
+                  "quantity": 3,
+                  "category": "Clothing",
+                  "isPromotional": true
+                },
+                {
+                  "productId": "PHONE-CASE-APPLE",
+                  "name": "Apple iPhone Case",
+                  "price": 25.99,
+                  "quantity": 2,
+                  "category": "Electronics",
+                  "isPromotional": false
+                },
+                {
+                  "productId": "COFFEE-MUG-CERAMIC",
+                  "name": "Ceramic Coffee Mug",
+                  "price": 12.50,
+                  "quantity": 4,
+                  "category": "Home & Garden",
+                  "isPromotional": false
+                }
+              ],
+              "subtotal": 236.98
+            }
+          }
+        ]
+      },
+      "points_adjustment": {
+        "method": "POST",
+        "path": "/customers/{customerId}/points",
+        "payload": {
+          "amount": 500,
+          "reason": "Compensation for delayed shipment on order #12345",
+          "adminUserId": "admin-550e8400-e29b-41d4-a716-446655440001"
+        },
+        "variations": [
+          {
+            "description": "Add bonus points",
+            "payload": {
+              "amount": 1000,
+              "reason": "Birthday bonus points for loyal customer",
+              "adminUserId": "admin-550e8400-e29b-41d4-a716-446655440001"
+            }
+          },
+          {
+            "description": "Deduct points (refund)",
+            "payload": {
+              "amount": -250,
+              "reason": "Points refund for returned merchandise",
+              "adminUserId": "admin-550e8400-e29b-41d4-a716-446655440001"
+            }
+          },
+          {
+            "description": "System correction",
+            "payload": {
+              "amount": 75,
+              "reason": "System error correction - missing points from order #98765"
+            }
+          }
+        ]
+      },
+      "calculate_discounts": {
+        "method": "POST",
+        "path": "/discounts/calculate",
+        "payload": {
+          "customerId": "550e8400-e29b-41d4-a716-446655440000",
+          "items": [
+            {
+              "productId": "LAPTOP-HP-15-2024",
+              "name": "HP Laptop 15-inch",
+              "price": 75.00,
+              "quantity": 2,
+              "category": "Electronics",
+              "isPromotional": true
+            },
+            {
+              "productId": "SHIRT-NIKE-L",
+              "name": "Nike Sport Shirt",
+              "price": 45.00,
+              "quantity": 3,
+              "category": "Clothing",
+              "isPromotional": false
+            }
+          ],
+          "subtotal": 285.00
+        },
+        "variations": [
+          {
+            "description": "High-value electronics order",
+            "payload": {
+              "customerId": "550e8400-e29b-41d4-a716-446655440000",
+              "items": [
+                {
+                  "productId": "MACBOOK-PRO-16",
+                  "name": "MacBook Pro 16-inch",
+                  "price": 2499.99,
+                  "quantity": 1,
+                  "category": "Electronics",
+                  "isPromotional": false
+                },
+                {
+                  "productId": "MONITOR-4K-27",
+                  "name": "4K Monitor 27-inch",
+                  "price": 399.99,
+                  "quantity": 1,
+                  "category": "Electronics",
+                  "isPromotional": true
+                }
+              ],
+              "subtotal": 2899.98
+            }
+          },
+          {
+            "description": "Mixed category bulk order",
+            "payload": {
+              "customerId": "550e8400-e29b-41d4-a716-446655440000",
+              "items": [
+                {
+                  "productId": "BOOK-SET-PROGRAMMING",
+                  "name": "Programming Book Set",
+                  "price": 89.99,
+                  "quantity": 2,
+                  "category": "Books",
+                  "isPromotional": false
+                },
+                {
+                  "productId": "DESK-CHAIR-ERGONOMIC",
+                  "name": "Ergonomic Desk Chair",
+                  "price": 299.99,
+                  "quantity": 1,
+                  "category": "Office",
+                  "isPromotional": true
+                },
+                {
+                  "productId": "PLANTS-INDOOR-SET",
+                  "name": "Indoor Plant Set",
+                  "price": 49.99,
+                  "quantity": 3,
+                  "category": "Home & Garden",
+                  "isPromotional": false
+                }
+              ],
+              "subtotal": 629.95
+            }
+          }
+        ]
+      }
+    },
+    "query_parameters": {
+      "list_customers": {
+        "page": "integer (minimum: 1, default: 1)",
+        "limit": "integer (minimum: 1, maximum: 100, default: 20)",
+        "tier": "string (enum: Bronze, Silver, Gold, Platinum)",
+        "email": "string (partial match filter)"
+      },
+      "get_points": {
+        "includeHistory": "boolean (default: false)",
+        "limit": "integer (minimum: 1, maximum: 100, default: 50)"
+      }
+    },
+    "membership_tiers": [
+      "Bronze",
+      "Silver", 
+      "Gold",
+      "Platinum"
+    ],
+    "sample_response_format": {
+      "status": "success",
+      "message": "Endpoint [METHOD] [PATH] processed",
+      "class": "E-commerce Loyalty System API",
+      "operation": null,
+      "data": {
+        "endpoint": "/* endpoint metadata */",
+        "request_data": "/* submitted payload */",
+        "path_params": "/* URL path parameters */", 
+        "query_params": "/* URL query parameters */",
+        "headers": "/* request headers */",
+        "class_id": 55,
+        "class_name": "E-commerce Loyalty System API"
+      }
+    }
+  }
+}

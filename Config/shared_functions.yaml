@@ -1,0 +1,54 @@
+# Shared Function Definitions
+# Auto-generated table functions that are available in both Forge and Praxis
+
+function_categories:
+  builtin:
+    description: "Built-in system functions"
+    icon: "fas fa-cog"
+    
+  table:
+    description: "Auto-generated table functions"
+    icon: "fas fa-table"
+    subcategories:
+      pk_exists:
+        description: "Primary key existence checks"
+        icon: "fas fa-key"
+        pattern: "{table_name}_pk_exists({pk_params})"
+        
+      column_getters:
+        description: "Column value getters"
+        icon: "fas fa-columns"
+        pattern: "{table_name}_get_{column_name}({pk_params})"
+        
+  custom:
+    description: "User-defined custom functions"
+    icon: "fas fa-user-cog"
+
+# Function Generation Rules
+generation_rules:
+  naming_convention:
+    table_name_format: "uppercase_with_underscores"
+    function_prefix: "{table_name}_"
+    pk_exists_suffix: "pk_exists"
+    column_getter_prefix: "get_"
+    
+  parameter_rules:
+    pk_parameter_names: ["id", "key", "pk"]
+    parameter_format: "snake_case"
+    
+  caching:
+    enabled: true
+    default_ttl_seconds: 300
+    max_cache_size: 10000
+    
+# Function Templates
+templates:
+  pk_exists:
+    signature: "{table_name}_pk_exists({pk_params})"
+    return_type: "boolean"
+    description: "Check if primary key exists in {table_display_name}"
+    
+  column_getter:
+    signature: "{table_name}_get_{column_name}({pk_params})"
+    return_type: "{column_type}"
+    description: "Get {column_name} from {table_display_name} by primary key"

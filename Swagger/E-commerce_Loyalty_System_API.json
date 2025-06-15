@@ -1,0 +1,1439 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "E-commerce Loyalty System API",
+    "description": "Comprehensive API for managing customer loyalty programs, points calculation, tier management, and discount application in an e-commerce environment.\n\n## Business Rules Implemented:\n- **Tier Calculation**: Bronze/Silver/Gold/Platinum based on total spending\n- **Points Earning**: Base + tier multipliers + category bonuses\n- **Discount Application**: Tier-based + promotional + threshold discounts\n",
+    "version": "1.0.0",
+    "contact": {
+      "name": "E-commerce Loyalty Team",
+      "email": "loyalty-api@company.com"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.company.com/ecommerce/loyalty/v1",
+      "description": "Production server - E-commerce Loyalty System"
+    },
+    {
+      "url": "https://staging-api.company.com/ecommerce/loyalty/v1",
+      "description": "Staging server - E-commerce Loyalty System"
+    },
+    {
+      "url": "https://dev-api.company.com/ecommerce/loyalty/v1",
+      "description": "Development server - E-commerce Loyalty System"
+    },
+    {
+      "url": "http://localhost:8080/ecommerce/loyalty/v1",
+      "description": "Local development server - E-commerce Loyalty System"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    },
+    {
+      "apiKeyAuth": []
+    }
+  ],
+  "paths": {
+    "/customers": {
+      "get": {
+        "summary": "List customers with pagination",
+        "description": "Retrieve a paginated list of customers with optional filtering",
+        "tags": [
+          "Customers"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number for pagination",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "example": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of items per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "example": 20
+            }
+          },
+          {
+            "name": "tier",
+            "in": "query",
+            "description": "Filter by membership tier",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/MembershipTier"
+            }
+          },
+          {
+            "name": "email",
+            "in": "query",
+            "description": "Filter by email (partial match)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "email",
+              "maxLength": 255
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved customers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Customer"
+                      }
+                    },
+                    "pagination": {
+                      "$ref": "#/components/schemas/PaginationInfo"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new customer",
+        "description": "Register a new customer in the loyalty system",
+        "tags": [
+          "Customers"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Customer created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Customer"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "409": {
+            "description": "Customer with email already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/customers/{customerId}": {
+      "get": {
+        "summary": "Get customer by ID",
+        "description": "Retrieve detailed information about a specific customer",
+        "tags": [
+          "Customers"
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier for the customer",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "550e8400-e29b-41d4-a716-446655440000"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Customer"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update customer information",
+        "description": "Update customer details (email, preferences, etc.)",
+        "tags": [
+          "Customers"
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCustomerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Customer updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Customer"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/orders": {
+      "post": {
+        "summary": "Process a new order",
+        "description": "Process a new order and apply loyalty rules including:\n- Points calculation based on tier and categories\n- Discount application based on business rules\n- Tier progression updates\n",
+        "tags": [
+          "Orders"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProcessOrderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Order processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcessedOrder"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "description": "Customer not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/orders/{orderId}": {
+      "get": {
+        "summary": "Get order details",
+        "description": "Retrieve complete order information including applied discounts and points",
+        "tags": [
+          "Orders"
+        ],
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order details retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcessedOrder"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/customers/{customerId}/points": {
+      "get": {
+        "summary": "Get customer points balance",
+        "description": "Retrieve current points balance and transaction history",
+        "tags": [
+          "Loyalty Points"
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "includeHistory",
+            "in": "query",
+            "description": "Include points transaction history",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Limit number of history records",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Points information retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PointsBalance"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      },
+      "post": {
+        "summary": "Manual points adjustment",
+        "description": "Manually adjust customer points (admin operation)\nRequires elevated permissions\n",
+        "tags": [
+          "Loyalty Points"
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PointsAdjustmentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Points adjusted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PointsBalance"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "403": {
+            "description": "Insufficient permissions"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/customers/{customerId}/tier": {
+      "get": {
+        "summary": "Get customer tier information",
+        "description": "Retrieve current tier and progression information",
+        "tags": [
+          "Tier Management"
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tier information retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TierInfo"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      },
+      "put": {
+        "summary": "Recalculate customer tier",
+        "description": "Force recalculation of customer tier based on current spending",
+        "tags": [
+          "Tier Management"
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tier recalculated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TierInfo"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/discounts/calculate": {
+      "post": {
+        "summary": "Calculate available discounts",
+        "description": "Calculate all applicable discounts for a given customer and order\nwithout processing the actual order\n",
+        "tags": [
+          "Discounts"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscountCalculationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Discounts calculated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscountCalculationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key"
+      }
+    },
+    "schemas": {
+      "Customer": {
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "membershipTier",
+          "totalSpent",
+          "joinDate",
+          "isActive"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique customer identifier",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 255,
+            "description": "Customer email address",
+            "example": "john.doe@example.com"
+          },
+          "firstName": {
+            "type": "string",
+            "maxLength": 100,
+            "pattern": "^[a-zA-Z\\s\\-']+$",
+            "description": "Customer first name",
+            "example": "John"
+          },
+          "lastName": {
+            "type": "string",
+            "maxLength": 100,
+            "pattern": "^[a-zA-Z\\s\\-']+$",
+            "description": "Customer last name",
+            "example": "Doe"
+          },
+          "membershipTier": {
+            "$ref": "#/components/schemas/MembershipTier"
+          },
+          "totalSpent": {
+            "type": "number",
+            "format": "decimal",
+            "minimum": 0,
+            "multipleOf": 0.01,
+            "description": "Total amount spent by customer",
+            "example": 1250.75
+          },
+          "currentPoints": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Current loyalty points balance",
+            "example": 3750
+          },
+          "joinDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Date when customer joined the program",
+            "example": "2024-01-15T10:30:00Z"
+          },
+          "lastOrderDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Date of last order",
+            "example": "2024-06-01T14:22:00Z"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Whether customer account is active",
+            "example": true
+          },
+          "preferences": {
+            "$ref": "#/components/schemas/CustomerPreferences"
+          }
+        }
+      },
+      "MembershipTier": {
+        "type": "string",
+        "enum": [
+          "Bronze",
+          "Silver",
+          "Gold",
+          "Platinum"
+        ],
+        "description": "Customer membership tier",
+        "example": "Gold"
+      },
+      "CustomerPreferences": {
+        "type": "object",
+        "properties": {
+          "emailNotifications": {
+            "type": "boolean",
+            "default": true
+          },
+          "smsNotifications": {
+            "type": "boolean",
+            "default": false
+          },
+          "preferredCategories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10,
+            "example": [
+              "Electronics",
+              "Clothing"
+            ]
+          }
+        }
+      },
+      "CreateCustomerRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "firstName",
+          "lastName"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 255,
+            "example": "jane.smith@example.com"
+          },
+          "firstName": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z\\s\\-']+$",
+            "example": "Jane"
+          },
+          "lastName": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z\\s\\-']+$",
+            "example": "Smith"
+          },
+          "preferences": {
+            "$ref": "#/components/schemas/CustomerPreferences"
+          }
+        }
+      },
+      "UpdateCustomerRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 255
+          },
+          "firstName": {
+            "type": "string",
+            "maxLength": 100,
+            "pattern": "^[a-zA-Z\\s\\-']+$"
+          },
+          "lastName": {
+            "type": "string",
+            "maxLength": 100,
+            "pattern": "^[a-zA-Z\\s\\-']+$"
+          },
+          "preferences": {
+            "$ref": "#/components/schemas/CustomerPreferences"
+          }
+        }
+      },
+      "ProcessOrderRequest": {
+        "type": "object",
+        "required": [
+          "customerId",
+          "items",
+          "subtotal"
+        ],
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Customer placing the order",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/OrderItem"
+            }
+          },
+          "subtotal": {
+            "type": "number",
+            "format": "decimal",
+            "minimum": 0.01,
+            "maximum": 999999.99,
+            "multipleOf": 0.01,
+            "description": "Order subtotal before discounts",
+            "example": 157.5
+          },
+          "orderDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Order timestamp (defaults to current time)",
+            "example": "2024-06-08T15:30:00Z"
+          }
+        }
+      },
+      "OrderItem": {
+        "type": "object",
+        "required": [
+          "productId",
+          "name",
+          "price",
+          "quantity",
+          "category"
+        ],
+        "properties": {
+          "productId": {
+            "type": "string",
+            "maxLength": 50,
+            "pattern": "^[a-zA-Z0-9\\-_]+$",
+            "description": "Product identifier",
+            "example": "LAPTOP-HP-15-2024"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "description": "Product name",
+            "example": "HP Laptop 15-inch"
+          },
+          "price": {
+            "type": "number",
+            "format": "decimal",
+            "minimum": 0.01,
+            "maximum": 99999.99,
+            "multipleOf": 0.01,
+            "description": "Unit price",
+            "example": 75
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 999,
+            "description": "Quantity ordered",
+            "example": 2
+          },
+          "category": {
+            "type": "string",
+            "maxLength": 50,
+            "description": "Product category",
+            "example": "Electronics"
+          },
+          "isPromotional": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether item is on promotion",
+            "example": true
+          }
+        }
+      },
+      "ProcessedOrder": {
+        "type": "object",
+        "required": [
+          "orderId",
+          "customerId",
+          "originalSubtotal",
+          "finalTotal",
+          "pointsEarned",
+          "appliedDiscounts",
+          "processedAt"
+        ],
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Generated order identifier",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "customerId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItem"
+            }
+          },
+          "originalSubtotal": {
+            "type": "number",
+            "format": "decimal",
+            "description": "Subtotal before discounts",
+            "example": 157.5
+          },
+          "finalTotal": {
+            "type": "number",
+            "format": "decimal",
+            "description": "Final amount after all discounts",
+            "example": 133.88
+          },
+          "pointsEarned": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Loyalty points earned from this order",
+            "example": 268
+          },
+          "appliedDiscounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AppliedDiscount"
+            }
+          },
+          "tierAtTimeOfOrder": {
+            "$ref": "#/components/schemas/MembershipTier"
+          },
+          "processedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-06-08T15:35:22Z"
+          }
+        }
+      },
+      "AppliedDiscount": {
+        "type": "object",
+        "required": [
+          "type",
+          "description",
+          "amount",
+          "percentage"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "TierDiscount",
+              "PromotionalDiscount",
+              "ThresholdDiscount",
+              "CategoryDiscount"
+            ],
+            "example": "TierDiscount"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 200,
+            "example": "Gold tier 15% discount"
+          },
+          "amount": {
+            "type": "number",
+            "format": "decimal",
+            "minimum": 0,
+            "description": "Discount amount in currency",
+            "example": 23.62
+          },
+          "percentage": {
+            "type": "number",
+            "format": "decimal",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Discount percentage applied",
+            "example": 15
+          },
+          "appliedToItems": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Product IDs this discount applied to",
+            "example": [
+              "LAPTOP-HP-15-2024"
+            ]
+          }
+        }
+      },
+      "PointsBalance": {
+        "type": "object",
+        "required": [
+          "customerId",
+          "currentBalance",
+          "totalEarned",
+          "totalRedeemed"
+        ],
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "currentBalance": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 3750
+          },
+          "totalEarned": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 5200
+          },
+          "totalRedeemed": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 1450
+          },
+          "lastUpdated": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-06-08T15:35:22Z"
+          },
+          "transactionHistory": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PointsTransaction"
+            }
+          }
+        }
+      },
+      "PointsTransaction": {
+        "type": "object",
+        "required": [
+          "transactionId",
+          "type",
+          "amount",
+          "description",
+          "timestamp"
+        ],
+        "properties": {
+          "transactionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "Earned",
+              "Redeemed",
+              "Adjustment",
+              "Expired"
+            ],
+            "example": "Earned"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Points amount (positive for earned, negative for redeemed)",
+            "example": 268
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 200,
+            "example": "Points earned from order #123e4567"
+          },
+          "orderId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Related order ID if applicable"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-06-08T15:35:22Z"
+          }
+        }
+      },
+      "PointsAdjustmentRequest": {
+        "type": "object",
+        "required": [
+          "amount",
+          "reason"
+        ],
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "minimum": -999999,
+            "maximum": 999999,
+            "description": "Points to add (positive) or subtract (negative)",
+            "example": 500
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 10,
+            "description": "Reason for manual adjustment",
+            "example": "Compensation for delayed shipment"
+          },
+          "adminUserId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of admin making the adjustment"
+          }
+        }
+      },
+      "TierInfo": {
+        "type": "object",
+        "required": [
+          "customerId",
+          "currentTier",
+          "totalSpent",
+          "nextTier",
+          "spentTowardsNext",
+          "amountNeededForNext"
+        ],
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "currentTier": {
+            "$ref": "#/components/schemas/MembershipTier"
+          },
+          "totalSpent": {
+            "type": "number",
+            "format": "decimal",
+            "minimum": 0,
+            "example": 1250.75
+          },
+          "nextTier": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MembershipTier"
+              }
+            ],
+            "nullable": true,
+            "example": "Platinum"
+          },
+          "spentTowardsNext": {
+            "type": "number",
+            "format": "decimal",
+            "minimum": 0,
+            "description": "Amount spent towards next tier",
+            "example": 1250.75
+          },
+          "amountNeededForNext": {
+            "type": "number",
+            "format": "decimal",
+            "minimum": 0,
+            "nullable": true,
+            "description": "Additional spending needed for next tier",
+            "example": 3749.25
+          },
+          "tierBenefits": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "15% discount on orders over $75",
+              "2x points on all purchases"
+            ]
+          }
+        }
+      },
+      "DiscountCalculationRequest": {
+        "type": "object",
+        "required": [
+          "customerId",
+          "items",
+          "subtotal"
+        ],
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/OrderItem"
+            }
+          },
+          "subtotal": {
+            "type": "number",
+            "format": "decimal",
+            "minimum": 0.01
+          }
+        }
+      },
+      "DiscountCalculationResponse": {
+        "type": "object",
+        "required": [
+          "availableDiscounts",
+          "totalDiscountAmount",
+          "finalTotal",
+          "recommendedTotal"
+        ],
+        "properties": {
+          "availableDiscounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AvailableDiscount"
+            }
+          },
+          "totalDiscountAmount": {
+            "type": "number",
+            "format": "decimal",
+            "minimum": 0,
+            "description": "Total discount amount if all applicable",
+            "example": 23.62
+          },
+          "finalTotal": {
+            "type": "number",
+            "format": "decimal",
+            "minimum": 0,
+            "description": "Final amount after all discounts",
+            "example": 133.88
+          },
+          "recommendedTotal": {
+            "type": "number",
+            "format": "decimal",
+            "minimum": 0,
+            "description": "Recommended pricing with optimal discounts",
+            "example": 133.88
+          }
+        }
+      },
+      "AvailableDiscount": {
+        "type": "object",
+        "required": [
+          "type",
+          "description",
+          "potentialAmount",
+          "isApplicable",
+          "conditions"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "TierDiscount",
+              "PromotionalDiscount",
+              "ThresholdDiscount",
+              "CategoryDiscount"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "potentialAmount": {
+            "type": "number",
+            "format": "decimal",
+            "minimum": 0
+          },
+          "percentage": {
+            "type": "number",
+            "format": "decimal",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "isApplicable": {
+            "type": "boolean",
+            "description": "Whether this discount can be applied"
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Conditions that must be met",
+            "example": [
+              "Order total must exceed $75",
+              "Must be Gold tier or higher"
+            ]
+          }
+        }
+      },
+      "PaginationInfo": {
+        "type": "object",
+        "required": [
+          "page",
+          "limit",
+          "total",
+          "totalPages"
+        ],
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 1
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 20
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 156
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 8
+          },
+          "hasNext": {
+            "type": "boolean",
+            "example": true
+          },
+          "hasPrevious": {
+            "type": "boolean",
+            "example": false
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "error",
+          "message",
+          "timestamp"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error code",
+            "example": "VALIDATION_ERROR"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message",
+            "example": "Invalid email format"
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "example": "email"
+                },
+                "message": {
+                  "type": "string",
+                  "example": "Must be a valid email address"
+                },
+                "rejectedValue": {
+                  "type": "string",
+                  "example": "invalid-email"
+                }
+              }
+            }
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-06-08T15:35:22Z"
+          },
+          "path": {
+            "type": "string",
+            "description": "API endpoint that generated the error",
+            "example": "/ecommerce/loyalty/v1/customers"
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad request - validation errors or malformed input",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": "VALIDATION_ERROR",
+              "message": "Request validation failed",
+              "details": [
+                {
+                  "field": "email",
+                  "message": "Must be a valid email address",
+                  "rejectedValue": "invalid-email"
+                }
+              ],
+              "timestamp": "2024-06-08T15:35:22Z",
+              "path": "/ecommerce/loyalty/v1/customers"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Unauthorized - invalid or missing authentication",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": "UNAUTHORIZED",
+              "message": "Invalid or missing authentication token",
+              "timestamp": "2024-06-08T15:35:22Z",
+              "path": "/ecommerce/loyalty/v1/customers"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": "NOT_FOUND",
+              "message": "Customer not found",
+              "timestamp": "2024-06-08T15:35:22Z",
+              "path": "/ecommerce/loyalty/v1/customers/550e8400-e29b-41d4-a716-446655440000"
+            }
+          }
+        }
+      },
+      "InternalServerError": {
+        "description": "Internal server error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": "INTERNAL_SERVER_ERROR",
+              "message": "An unexpected error occurred",
+              "timestamp": "2024-06-08T15:35:22Z",
+              "path": "/ecommerce/loyalty/v1/orders"
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Customers",
+      "description": "Customer management operations"
+    },
+    {
+      "name": "Orders",
+      "description": "Order processing and loyalty rule execution"
+    },
+    {
+      "name": "Loyalty Points",
+      "description": "Points balance and transaction management"
+    },
+    {
+      "name": "Tier Management",
+      "description": "Customer tier calculation and progression"
+    },
+    {
+      "name": "Discounts",
+      "description": "Discount calculation and application"
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "flow_id": 10,
+  "flow_name": "Currency Conversion Flow",
+  "flow_version": "1.0",
+  "start_nodes": ["100"],
+  "nodes": {
+    "100": {
+      "id": "100",
+      "type": "validation",
+      "reference_id": 1001,
+      "properties": {
+        "validation_rules": [
+          {
+            "field": "amount",
+            "type": "number",
+            "required": true,
+            "min": 0,
+            "error_message": "Amount must be a positive number"
+          },
+          {
+            "field": "from_currency",
+            "type": "string",
+            "required": true,
+            "pattern": "^[A-Z]{3}$",
+            "error_message": "From currency must be 3-letter ISO code"
+          },
+          {
+            "field": "to_currency",
+            "type": "string",
+            "required": true,
+            "pattern": "^[A-Z]{3}$",
+            "error_message": "To currency must be 3-letter ISO code"
+          }
+        ]
+      }
+    },
+    "101": {
+      "id": "101",
+      "type": "api-call",
+      "reference_id": 1002,
+      "properties": {
+        "endpoint": "https://api.exchangerate-api.com/v4/latest/${from_currency}",
+        "method": "GET",
+        "headers": {
+          "Accept": "application/json"
+        },
+        "timeout": 10,
+        "retry": 2,
+        "response_mapping": {
+          "exchange_rate": "rates.${to_currency}"
+        }
+      }
+    },
+    "102": {
+      "id": "102",
+      "type": "calculation",
+      "reference_id": 1003,
+      "properties": {
+        "calculations": [
+          {
+            "field": "converted_amount",
+            "formula": "amount * exchange_rate",
+            "precision": 2
+          },
+          {
+            "field": "conversion_date",
+            "formula": "NOW()"
+          },
+          {
+            "field": "conversion_info",
+            "formula": "CONCAT(amount, ' ', from_currency, ' = ', converted_amount, ' ', to_currency)"
+          }
+        ]
+      }
+    },
+    "103": {
+      "id": "103",
+      "type": "end",
+      "reference_id": null,
+      "properties": {}
+    }
+  },
+  "connections": {
+    "100": [{"target": "101", "condition": ""}],
+    "101": [{"target": "102", "condition": ""}],
+    "102": [{"target": "103", "condition": ""}]
+  },
+  "rules": {},
+  "rule_groups": {},
+  "functions": {},
+  "metadata": {
+    "created_at": "2025-01-06T10:00:00.000000",
+    "source": "manual",
+    "transformed_at": "2025-01-06T10:00:00.000000"
+  }
+}

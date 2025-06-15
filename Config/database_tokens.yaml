@@ -1,0 +1,37 @@
+# Shared Database Connection Tokens
+# This file contains encrypted tokens and connection metadata shared between Forge and Praxis
+# Format: token_id -> connection details
+
+database_connections:
+  # Example structure - actual tokens will be generated dynamically
+  # token_dev_sqlite_001:
+  #   token: "encrypted_connection_string_here"
+  #   db_type: "SQLite"
+  #   environment: "DEV"
+  #   description: "Development SQLite Database"
+  #   created_by: "forge"
+  #   created_at: "2024-01-01T00:00:00Z"
+  #   expires_at: "2024-12-31T23:59:59Z"
+  #   permissions:
+  #     - "READ"
+  #     - "EXECUTE_QUERIES"
+
+# Connection Pool Settings
+connection_pool:
+  max_connections_per_token: 10
+  connection_timeout_seconds: 30
+  idle_timeout_seconds: 300
+  retry_attempts: 3
+
+# Security Settings
+security:
+  token_encryption_key: "shared_secret_key_placeholder"
+  token_expiry_days: 365
+  auto_cleanup_expired: true
+  require_ssl: false  # Set to true in production
+
+# Logging
+logging:
+  log_connection_attempts: true
+  log_query_execution: false  # Set to true for debugging
+  log_file_path: "/var/log/gee/database_connections.log"

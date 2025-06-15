@@ -4,3 +4,7 @@ server:
 
 database:
   storage_path: ./data
+  runtime_db_path: ./praxis_runtime.db
+  
+forge:
+  url: http://localhost:5001

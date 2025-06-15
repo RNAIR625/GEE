@@ -1,0 +1,202 @@
+{
+  "description": "Sample input data for GST calculation and E2E testing flows",
+  "samples": [
+    {
+      "name": "Ontario HST - Parker Pen",
+      "description": "Premium pen purchase in Ontario (HST province)",
+      "input": {
+        "objectId": "Parker Pen",
+        "postal_code": "M5V 3A8",
+        "base_amount": 46.00,
+        "userPincode": "M5V 3A8",
+        "storePincode": "M5V 3A8"
+      },
+      "expected_output": {
+        "pin_code_exists": true,
+        "postal_code_exists": true,
+        "gst_rate": 0.0,
+        "hst_rate": 0.13,
+        "pst_rate": 0.0,
+        "tax_amount": 5.98,
+        "total_tax": 5.98,
+        "total_amount": 51.98
+      }
+    },
+    {
+      "name": "Quebec GST+PST - Mont Blanc Pen",
+      "description": "Luxury pen purchase in Quebec (separate GST and PST)",
+      "input": {
+        "objectId": "Mont Blanc",
+        "postal_code": "H3A 0G4",
+        "base_amount": 150.00,
+        "userPincode": "H3A 0G4",
+        "storePincode": "H3A 0G4"
+      },
+      "expected_output": {
+        "pin_code_exists": true,
+        "postal_code_exists": true,
+        "gst_rate": 0.05,
+        "hst_rate": 0.0,
+        "pst_rate": 0.0975,
+        "tax_amount": 22.13,
+        "total_tax": 22.13,
+        "total_amount": 172.13
+      }
+    },
+    {
+      "name": "British Columbia GST+PST - Bic Pen",
+      "description": "Budget pen purchase in BC (separate GST and PST)",
+      "input": {
+        "objectId": "Bic Pen",
+        "postal_code": "V6E 4M2",
+        "base_amount": 2.50,
+        "userPincode": "V6E 4M2",
+        "storePincode": "V6E 4M2"
+      },
+      "expected_output": {
+        "pin_code_exists": true,
+        "postal_code_exists": true,
+        "gst_rate": 0.05,
+        "hst_rate": 0.0,
+        "pst_rate": 0.07,
+        "tax_amount": 0.30,
+        "total_tax": 0.30,
+        "total_amount": 2.80
+      }
+    },
+    {
+      "name": "Alberta GST Only - Pilot G2",
+      "description": "Gel pen purchase in Alberta (GST only, no provincial tax)",
+      "input": {
+        "objectId": "Pilot G2",
+        "postal_code": "T2P 2Y5",
+        "base_amount": 3.75,
+        "userPincode": "T2P 2Y5",
+        "storePincode": "T2P 2Y5"
+      },
+      "expected_output": {
+        "pin_code_exists": true,
+        "postal_code_exists": true,
+        "gst_rate": 0.05,
+        "hst_rate": 0.0,
+        "pst_rate": 0.0,
+        "tax_amount": 0.19,
+        "total_tax": 0.19,
+        "total_amount": 3.94
+      }
+    },
+    {
+      "name": "Nova Scotia HST - Sharpie",
+      "description": "Marker purchase in Nova Scotia (HST province)",
+      "input": {
+        "objectId": "Sharpie",
+        "postal_code": "B3H 1A6",
+        "base_amount": 1.99,
+        "userPincode": "B3H 1A6",
+        "storePincode": "B3H 1A6"
+      },
+      "expected_output": {
+        "pin_code_exists": true,
+        "postal_code_exists": true,
+        "gst_rate": 0.0,
+        "hst_rate": 0.15,
+        "pst_rate": 0.0,
+        "tax_amount": 0.30,
+        "total_tax": 0.30,
+        "total_amount": 2.29
+      }
+    },
+    {
+      "name": "Large Order - Multiple Items",
+      "description": "High-value order for testing large amounts",
+      "input": {
+        "objectId": "Mont Blanc",
+        "postal_code": "M5V 3A8",
+        "base_amount": 1000.00,
+        "userPincode": "M5V 3A8",
+        "storePincode": "M5V 3A8"
+      },
+      "expected_output": {
+        "pin_code_exists": true,
+        "postal_code_exists": true,
+        "gst_rate": 0.0,
+        "hst_rate": 0.13,
+        "pst_rate": 0.0,
+        "tax_amount": 130.00,
+        "total_tax": 130.00,
+        "total_amount": 1130.00
+      }
+    },
+    {
+      "name": "Invalid Postal Code Test",
+      "description": "Test with non-existent postal code",
+      "input": {
+        "objectId": "Parker Pen",
+        "postal_code": "X9X 9X9",
+        "base_amount": 46.00,
+        "userPincode": "X9X 9X9",
+        "storePincode": "X9X 9X9"
+      },
+      "expected_output": {
+        "pin_code_exists": false,
+        "postal_code_exists": false,
+        "gst_rate": 0.0,
+        "hst_rate": 0.0,
+        "pst_rate": 0.0,
+        "tax_amount": 0.0,
+        "total_tax": 0.0,
+        "error": "Postal code not found"
+      }
+    },
+    {
+      "name": "Minimal Amount Test",
+      "description": "Test with very small amount (penny)",
+      "input": {
+        "objectId": "Bic Pen",
+        "postal_code": "M5V 3A8",
+        "base_amount": 0.01,
+        "userPincode": "M5V 3A8",
+        "storePincode": "M5V 3A8"
+      },
+      "expected_output": {
+        "pin_code_exists": true,
+        "postal_code_exists": true,
+        "gst_rate": 0.0,
+        "hst_rate": 0.13,
+        "pst_rate": 0.0,
+        "tax_amount": 0.00,
+        "total_tax": 0.00,
+        "total_amount": 0.01
+      }
+    }
+  ],
+  "curl_examples": [
+    {
+      "description": "Test GST calculation flow with Ontario HST",
+      "command": "curl -X POST \"http://localhost:8080/api/v1/flows/1/execute\" -H \"Content-Type: application/json\" -d '{\"postal_code\":\"M5V 3A8\",\"base_amount\":46.00}'"
+    },
+    {
+      "description": "Test with Quebec GST+PST",
+      "command": "curl -X POST \"http://localhost:8080/api/v1/flows/1/execute\" -H \"Content-Type: application/json\" -d '{\"postal_code\":\"H3A 0G4\",\"base_amount\":150.00}'"
+    },
+    {
+      "description": "Test with Alberta GST only",
+      "command": "curl -X POST \"http://localhost:8080/api/v1/flows/1/execute\" -H \"Content-Type: application/json\" -d '{\"postal_code\":\"T2P 2Y5\",\"base_amount\":3.75}'"
+    }
+  ],
+  "notes": {
+    "field_requirements": {
+      "postal_code": "Required - Canadian postal code format (e.g., M5V 3A8)",
+      "base_amount": "Required - Amount before tax as float",
+      "objectId": "Optional - Product identifier for reference",
+      "userPincode": "Optional - User's postal code (usually same as postal_code)",
+      "storePincode": "Optional - Store's postal code (usually same as postal_code)"
+    },
+    "tax_calculation_rules": {
+      "HST_provinces": ["Ontario", "New Brunswick", "Nova Scotia", "Prince Edward Island", "Newfoundland"],
+      "GST_plus_PST_provinces": ["Quebec", "British Columbia", "Saskatchewan", "Manitoba"],
+      "GST_only": ["Alberta", "Yukon", "Northwest Territories", "Nunavut"]
+    },
+    "rounding": "Tax amounts are rounded to 2 decimal places (cents)"
+  }
+}

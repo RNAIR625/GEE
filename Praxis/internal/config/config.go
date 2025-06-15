@@ -19,7 +19,8 @@ type ServerConfig struct {
 }
 
 type DatabaseConfig struct {
-	StoragePath string `yaml:"storage_path"`
+	StoragePath   string `yaml:"storage_path"`
+	RuntimeDBPath string `yaml:"runtime_db_path"`
 }
 
 func LoadConfig() (*Config, error) {

@@ -1,0 +1,330 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Canadian Tax Calculation API",
+    "description": "API for calculating GST, HST, and PST for Canadian products",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.canadiantax.example.com/v1",
+      "description": "Production server"
+    },
+    {
+      "url": "http://localhost:3000/v1",
+      "description": "Development server"
+    }
+  ],
+  "paths": {
+    "/postal-code/{postalCode}": {
+      "get": {
+        "summary": "Get postal code information",
+        "description": "Retrieve province and tax information for a given postal code",
+        "operationId": "getPostalCodeInfo",
+        "parameters": [
+          {
+            "name": "postalCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z][0-9][A-Z]$"
+            },
+            "example": "M5V"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Postal code information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostalCodeInfo"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Postal code not found"
+          }
+        }
+      }
+    },
+    "/product/{productCode}": {
+      "get": {
+        "summary": "Get product information",
+        "description": "Retrieve product details including pricing and tax exemption status",
+        "operationId": "getProductInfo",
+        "parameters": [
+          {
+            "name": "productCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "LAPTOP001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductInfo"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Product not found"
+          }
+        }
+      }
+    },
+    "/tax/calculate": {
+      "post": {
+        "summary": "Calculate taxes for a product",
+        "description": "Calculate GST, HST, and PST for a product in a specific location",
+        "operationId": "calculateTax",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaxCalculationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tax calculation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxCalculationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          }
+        }
+      }
+    },
+    "/tax/rates/{provinceCode}": {
+      "get": {
+        "summary": "Get tax rates for a province",
+        "description": "Retrieve GST, HST, and PST rates for a specific province",
+        "operationId": "getTaxRates",
+        "parameters": [
+          {
+            "name": "provinceCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z]{2}$"
+            },
+            "example": "ON"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tax rates information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxRates"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Province not found"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PostalCodeInfo": {
+        "type": "object",
+        "properties": {
+          "postalCode": {
+            "type": "string",
+            "example": "M5V"
+          },
+          "city": {
+            "type": "string",
+            "example": "Toronto"
+          },
+          "province": {
+            "type": "string",
+            "example": "Ontario"
+          },
+          "provinceCode": {
+            "type": "string",
+            "example": "ON"
+          },
+          "region": {
+            "type": "string",
+            "example": "Central"
+          },
+          "taxRates": {
+            "$ref": "#/components/schemas/TaxRates"
+          }
+        }
+      },
+      "ProductInfo": {
+        "type": "object",
+        "properties": {
+          "productCode": {
+            "type": "string",
+            "example": "LAPTOP001"
+          },
+          "productName": {
+            "type": "string",
+            "example": "Gaming Laptop"
+          },
+          "category": {
+            "type": "string",
+            "example": "Electronics"
+          },
+          "basePrice": {
+            "type": "number",
+            "format": "float",
+            "example": 1299.99
+          },
+          "taxExempt": {
+            "type": "boolean",
+            "example": false
+          }
+        }
+      },
+      "TaxRates": {
+        "type": "object",
+        "properties": {
+          "gstRate": {
+            "type": "number",
+            "format": "float",
+            "example": 0.05
+          },
+          "hstRate": {
+            "type": "number",
+            "format": "float",
+            "example": 0.13
+          },
+          "pstRate": {
+            "type": "number",
+            "format": "float",
+            "example": 0.0
+          },
+          "combinedRate": {
+            "type": "number",
+            "format": "float",
+            "example": 0.13
+          },
+          "taxType": {
+            "type": "string",
+            "enum": ["GST+PST", "HST", "GST_ONLY"],
+            "example": "HST"
+          }
+        }
+      },
+      "TaxCalculationRequest": {
+        "type": "object",
+        "required": ["productCode", "postalCode"],
+        "properties": {
+          "productCode": {
+            "type": "string",
+            "example": "LAPTOP001"
+          },
+          "postalCode": {
+            "type": "string",
+            "pattern": "^[A-Z][0-9][A-Z]$",
+            "example": "M5V"
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1,
+            "example": 2
+          }
+        }
+      },
+      "TaxCalculationResponse": {
+        "type": "object",
+        "properties": {
+          "productCode": {
+            "type": "string",
+            "example": "LAPTOP001"
+          },
+          "productName": {
+            "type": "string",
+            "example": "Gaming Laptop"
+          },
+          "postalCode": {
+            "type": "string",
+            "example": "M5V"
+          },
+          "province": {
+            "type": "string",
+            "example": "Ontario"
+          },
+          "quantity": {
+            "type": "integer",
+            "example": 2
+          },
+          "basePrice": {
+            "type": "number",
+            "format": "float",
+            "example": 1299.99
+          },
+          "subtotal": {
+            "type": "number",
+            "format": "float",
+            "example": 2599.98
+          },
+          "gstAmount": {
+            "type": "number",
+            "format": "float",
+            "example": 0.0
+          },
+          "hstAmount": {
+            "type": "number",
+            "format": "float",
+            "example": 337.997
+          },
+          "pstAmount": {
+            "type": "number",
+            "format": "float",
+            "example": 0.0
+          },
+          "totalTax": {
+            "type": "number",
+            "format": "float",
+            "example": 337.997
+          },
+          "totalAmount": {
+            "type": "number",
+            "format": "float",
+            "example": 2937.977
+          },
+          "taxType": {
+            "type": "string",
+            "example": "HST"
+          },
+          "taxExempt": {
+            "type": "boolean",
+            "example": false
+          }
+        }
+      }
+    }
+  }
+}

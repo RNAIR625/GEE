@@ -1,4 +1,4 @@
-module praxis
+module github.com/GEE/Praxis
 
 go 1.21
 

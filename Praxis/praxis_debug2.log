@@ -1,0 +1,4 @@
+2025/06/04 16:12:25 Praxis server starting on :8080
+2025/06/04 16:12:25 Failed to load API endpoints: no database loaded
+2025/06/04 16:12:25 Server failed to start: listen tcp :8080: bind: address already in use
+exit status 1

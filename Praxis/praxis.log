@@ -1,0 +1,242 @@
+2025/06/03 15:21:49 Praxis server starting on :8080
+2025/06/03 15:21:49 Failed to load API endpoints: no database loaded
+2025/06/03 15:22:11 Starting flow execution with 1 start nodes
+2025/06/03 15:22:11 Processing start node: 1
+2025/06/03 15:22:11 Found node 1 of type start with reference_id 0
+2025/06/03 15:22:11 Executing node 1 of type start
+2025/06/03 15:22:11 Executing start node 1
+2025/06/03 15:22:11 Executing node 2 of type rule-group
+2025/06/03 15:22:11 Executing rule group with 1 rules using AND logic
+2025/06/03 15:22:11 Executing rule definition: validate_postal_code (type: Standard)
+2025/06/03 15:22:11 Evaluating 1 conditions for rule validate_postal_code
+2025/06/03 15:22:11 Executing condition function 1
+2025/06/03 15:22:11 Executing function: exists_in_pincode of type BUILTIN
+2025/06/03 15:22:11 Delegating built-in function 'exists_in_pincode' to comprehensive handler
+2025/06/03 15:22:11 Executing built-in function: exists_in_pincode
+2025/06/03 15:22:11 Checking built-in function name: 'exists_in_pincode' (lower: 'exists_in_pincode')
+2025/06/03 15:22:11 Matched exist_in_pin_code function
+2025/06/03 15:22:11 Executing exist_in_PIN_CODE function
+2025/06/03 15:22:11 Postal code validation result: true for code: H3A
+2025/06/03 15:22:11 Rule validate_postal_code conditions met: true
+2025/06/03 15:22:11 Rule validate_postal_code executed successfully
+2025/06/03 15:22:11 Executing node 3 of type rule-group
+2025/06/03 15:22:11 Executing rule group with 3 rules using AND logic
+2025/06/03 15:22:11 Executing rule definition: get_gst_rate (type: Standard)
+2025/06/03 15:22:11 Rule get_gst_rate conditions met: true
+2025/06/03 15:22:11 Executing 1 actions for rule get_gst_rate
+2025/06/03 15:22:11 Executing action function 2
+2025/06/03 15:22:11 Executing function: get_gst of type BUILTIN
+2025/06/03 15:22:11 Delegating built-in function 'get_gst' to comprehensive handler
+2025/06/03 15:22:11 Executing built-in function: get_gst
+2025/06/03 15:22:11 Checking built-in function name: 'get_gst' (lower: 'get_gst')
+2025/06/03 15:22:11 Executing get_gst function
+2025/06/03 15:22:11 GST rate for postal code: 0.05
+2025/06/03 15:22:11 Rule get_gst_rate executed successfully
+2025/06/03 15:22:11 Executing rule definition: get_hst_rate (type: Standard)
+2025/06/03 15:22:11 Rule get_hst_rate conditions met: true
+2025/06/03 15:22:11 Executing 1 actions for rule get_hst_rate
+2025/06/03 15:22:11 Executing action function 3
+2025/06/03 15:22:11 Executing function: get_hst of type BUILTIN
+2025/06/03 15:22:11 Delegating built-in function 'get_hst' to comprehensive handler
+2025/06/03 15:22:11 Executing built-in function: get_hst
+2025/06/03 15:22:11 Checking built-in function name: 'get_hst' (lower: 'get_hst')
+2025/06/03 15:22:11 Executing get_hst function
+2025/06/03 15:22:11 HST rate for postal code: 0
+2025/06/03 15:22:11 Rule get_hst_rate executed successfully
+2025/06/03 15:22:11 Executing rule definition: get_pst_rate (type: Standard)
+2025/06/03 15:22:11 Rule get_pst_rate conditions met: true
+2025/06/03 15:22:11 Executing 1 actions for rule get_pst_rate
+2025/06/03 15:22:11 Executing action function 4
+2025/06/03 15:22:11 Executing function: get_pst of type BUILTIN
+2025/06/03 15:22:11 Delegating built-in function 'get_pst' to comprehensive handler
+2025/06/03 15:22:11 Executing built-in function: get_pst
+2025/06/03 15:22:11 Checking built-in function name: 'get_pst' (lower: 'get_pst')
+2025/06/03 15:22:11 Executing get_pst function
+2025/06/03 15:22:11 PST rate for postal code: 0.09975
+2025/06/03 15:22:11 Rule get_pst_rate executed successfully
+2025/06/03 15:22:11 Executing node 4 of type rule-group
+2025/06/03 15:22:11 Executing rule group with 2 rules using AND logic
+2025/06/03 15:22:11 Executing rule definition: calculate_gst_amount (type: Standard)
+2025/06/03 15:22:11 Rule calculate_gst_amount conditions met: true
+2025/06/03 15:22:11 Executing 1 actions for rule calculate_gst_amount
+2025/06/03 15:22:11 Executing action function 6
+2025/06/03 15:22:11 Executing function: calculate_tax_amount of type BUILTIN
+2025/06/03 15:22:11 Delegating built-in function 'calculate_tax_amount' to comprehensive handler
+2025/06/03 15:22:11 Executing built-in function: calculate_tax_amount
+2025/06/03 15:22:11 Checking built-in function name: 'calculate_tax_amount' (lower: 'calculate_tax_amount')
+2025/06/03 15:22:11 Executing calculate_tax_amount function
+2025/06/03 15:22:11 Tax calculation: base=100, rate=0.14975, amount=14.98
+2025/06/03 15:22:11 Rule calculate_gst_amount executed successfully
+2025/06/03 15:22:11 Executing rule definition: calculate_pst_amount (type: Standard)
+2025/06/03 15:22:11 Rule calculate_pst_amount conditions met: true
+2025/06/03 15:22:11 Executing 1 actions for rule calculate_pst_amount
+2025/06/03 15:22:11 Executing action function 6
+2025/06/03 15:22:11 Executing function: calculate_tax_amount of type BUILTIN
+2025/06/03 15:22:11 Delegating built-in function 'calculate_tax_amount' to comprehensive handler
+2025/06/03 15:22:11 Executing built-in function: calculate_tax_amount
+2025/06/03 15:22:11 Checking built-in function name: 'calculate_tax_amount' (lower: 'calculate_tax_amount')
+2025/06/03 15:22:11 Executing calculate_tax_amount function
+2025/06/03 15:22:11 Tax calculation: base=100, rate=0.14975, amount=14.98
+2025/06/03 15:22:11 Rule calculate_pst_amount executed successfully
+2025/06/03 15:22:11 Executing node 5 of type end
+2025/06/03 15:22:11 Executing end node 5
+2025/06/03 15:22:41 Starting flow execution with 1 start nodes
+2025/06/03 15:22:41 Processing start node: 1
+2025/06/03 15:22:41 Found node 1 of type start with reference_id 0
+2025/06/03 15:22:41 Executing node 1 of type start
+2025/06/03 15:22:41 Executing start node 1
+2025/06/03 15:22:41 Executing node 2 of type rule-group
+2025/06/03 15:22:41 Executing rule group with 1 rules using AND logic
+2025/06/03 15:22:41 Executing rule definition: validate_postal_code (type: Standard)
+2025/06/03 15:22:41 Evaluating 1 conditions for rule validate_postal_code
+2025/06/03 15:22:41 Executing condition function 1
+2025/06/03 15:22:41 Executing function: exists_in_pincode of type BUILTIN
+2025/06/03 15:22:41 Delegating built-in function 'exists_in_pincode' to comprehensive handler
+2025/06/03 15:22:41 Executing built-in function: exists_in_pincode
+2025/06/03 15:22:41 Checking built-in function name: 'exists_in_pincode' (lower: 'exists_in_pincode')
+2025/06/03 15:22:41 Matched exist_in_pin_code function
+2025/06/03 15:22:41 Executing exist_in_PIN_CODE function
+2025/06/03 15:22:41 Postal code validation result: true for code: M5V
+2025/06/03 15:22:41 Rule validate_postal_code conditions met: true
+2025/06/03 15:22:41 Rule validate_postal_code executed successfully
+2025/06/03 15:22:41 Executing node 3 of type rule-group
+2025/06/03 15:22:41 Executing rule group with 3 rules using AND logic
+2025/06/03 15:22:41 Executing rule definition: get_gst_rate (type: Standard)
+2025/06/03 15:22:41 Rule get_gst_rate conditions met: true
+2025/06/03 15:22:41 Executing 1 actions for rule get_gst_rate
+2025/06/03 15:22:41 Executing action function 2
+2025/06/03 15:22:41 Executing function: get_gst of type BUILTIN
+2025/06/03 15:22:41 Delegating built-in function 'get_gst' to comprehensive handler
+2025/06/03 15:22:41 Executing built-in function: get_gst
+2025/06/03 15:22:41 Checking built-in function name: 'get_gst' (lower: 'get_gst')
+2025/06/03 15:22:41 Executing get_gst function
+2025/06/03 15:22:41 GST rate for postal code: 0
+2025/06/03 15:22:41 Rule get_gst_rate executed successfully
+2025/06/03 15:22:41 Executing rule definition: get_hst_rate (type: Standard)
+2025/06/03 15:22:41 Rule get_hst_rate conditions met: true
+2025/06/03 15:22:41 Executing 1 actions for rule get_hst_rate
+2025/06/03 15:22:41 Executing action function 3
+2025/06/03 15:22:41 Executing function: get_hst of type BUILTIN
+2025/06/03 15:22:41 Delegating built-in function 'get_hst' to comprehensive handler
+2025/06/03 15:22:41 Executing built-in function: get_hst
+2025/06/03 15:22:41 Checking built-in function name: 'get_hst' (lower: 'get_hst')
+2025/06/03 15:22:41 Executing get_hst function
+2025/06/03 15:22:41 HST rate for postal code: 0.13
+2025/06/03 15:22:41 Rule get_hst_rate executed successfully
+2025/06/03 15:22:41 Executing rule definition: get_pst_rate (type: Standard)
+2025/06/03 15:22:41 Rule get_pst_rate conditions met: true
+2025/06/03 15:22:41 Executing 1 actions for rule get_pst_rate
+2025/06/03 15:22:41 Executing action function 4
+2025/06/03 15:22:41 Executing function: get_pst of type BUILTIN
+2025/06/03 15:22:41 Delegating built-in function 'get_pst' to comprehensive handler
+2025/06/03 15:22:41 Executing built-in function: get_pst
+2025/06/03 15:22:41 Checking built-in function name: 'get_pst' (lower: 'get_pst')
+2025/06/03 15:22:41 Executing get_pst function
+2025/06/03 15:22:41 PST rate for postal code: 0
+2025/06/03 15:22:41 Rule get_pst_rate executed successfully
+2025/06/03 15:22:41 Executing node 4 of type rule-group
+2025/06/03 15:22:41 Executing rule group with 2 rules using AND logic
+2025/06/03 15:22:41 Executing rule definition: calculate_gst_amount (type: Standard)
+2025/06/03 15:22:41 Rule calculate_gst_amount conditions met: true
+2025/06/03 15:22:41 Executing 1 actions for rule calculate_gst_amount
+2025/06/03 15:22:41 Executing action function 6
+2025/06/03 15:22:41 Executing function: calculate_tax_amount of type BUILTIN
+2025/06/03 15:22:41 Delegating built-in function 'calculate_tax_amount' to comprehensive handler
+2025/06/03 15:22:41 Executing built-in function: calculate_tax_amount
+2025/06/03 15:22:41 Checking built-in function name: 'calculate_tax_amount' (lower: 'calculate_tax_amount')
+2025/06/03 15:22:41 Executing calculate_tax_amount function
+2025/06/03 15:22:41 Tax calculation: base=100, rate=0.13, amount=13
+2025/06/03 15:22:41 Rule calculate_gst_amount executed successfully
+2025/06/03 15:22:41 Executing rule definition: calculate_pst_amount (type: Standard)
+2025/06/03 15:22:41 Rule calculate_pst_amount conditions met: true
+2025/06/03 15:22:41 Executing 1 actions for rule calculate_pst_amount
+2025/06/03 15:22:41 Executing action function 6
+2025/06/03 15:22:41 Executing function: calculate_tax_amount of type BUILTIN
+2025/06/03 15:22:41 Delegating built-in function 'calculate_tax_amount' to comprehensive handler
+2025/06/03 15:22:41 Executing built-in function: calculate_tax_amount
+2025/06/03 15:22:41 Checking built-in function name: 'calculate_tax_amount' (lower: 'calculate_tax_amount')
+2025/06/03 15:22:41 Executing calculate_tax_amount function
+2025/06/03 15:22:41 Tax calculation: base=100, rate=0.13, amount=13
+2025/06/03 15:22:41 Rule calculate_pst_amount executed successfully
+2025/06/03 15:22:41 Executing node 5 of type end
+2025/06/03 15:22:41 Executing end node 5
+2025/06/03 15:23:00 Starting flow execution with 1 start nodes
+2025/06/03 15:23:00 Processing start node: 1
+2025/06/03 15:23:00 Found node 1 of type start with reference_id 0
+2025/06/03 15:23:00 Executing node 1 of type start
+2025/06/03 15:23:00 Executing start node 1
+2025/06/03 15:23:00 Executing node 2 of type rule-group
+2025/06/03 15:23:00 Executing rule group with 1 rules using AND logic
+2025/06/03 15:23:00 Executing rule definition: validate_postal_code (type: Standard)
+2025/06/03 15:23:00 Evaluating 1 conditions for rule validate_postal_code
+2025/06/03 15:23:00 Executing condition function 1
+2025/06/03 15:23:00 Executing function: exists_in_pincode of type BUILTIN
+2025/06/03 15:23:00 Delegating built-in function 'exists_in_pincode' to comprehensive handler
+2025/06/03 15:23:00 Executing built-in function: exists_in_pincode
+2025/06/03 15:23:00 Checking built-in function name: 'exists_in_pincode' (lower: 'exists_in_pincode')
+2025/06/03 15:23:00 Matched exist_in_pin_code function
+2025/06/03 15:23:00 Executing exist_in_PIN_CODE function
+2025/06/03 15:23:00 Postal code validation result: true for code: T2P
+2025/06/03 15:23:00 Rule validate_postal_code conditions met: true
+2025/06/03 15:23:00 Rule validate_postal_code executed successfully
+2025/06/03 15:23:00 Executing node 3 of type rule-group
+2025/06/03 15:23:00 Executing rule group with 3 rules using AND logic
+2025/06/03 15:23:00 Executing rule definition: get_gst_rate (type: Standard)
+2025/06/03 15:23:00 Rule get_gst_rate conditions met: true
+2025/06/03 15:23:00 Executing 1 actions for rule get_gst_rate
+2025/06/03 15:23:00 Executing action function 2
+2025/06/03 15:23:00 Executing function: get_gst of type BUILTIN
+2025/06/03 15:23:00 Delegating built-in function 'get_gst' to comprehensive handler
+2025/06/03 15:23:00 Executing built-in function: get_gst
+2025/06/03 15:23:00 Checking built-in function name: 'get_gst' (lower: 'get_gst')
+2025/06/03 15:23:00 Executing get_gst function
+2025/06/03 15:23:00 GST rate for postal code: 0.05
+2025/06/03 15:23:00 Rule get_gst_rate executed successfully
+2025/06/03 15:23:00 Executing rule definition: get_hst_rate (type: Standard)
+2025/06/03 15:23:00 Rule get_hst_rate conditions met: true
+2025/06/03 15:23:00 Executing 1 actions for rule get_hst_rate
+2025/06/03 15:23:00 Executing action function 3
+2025/06/03 15:23:00 Executing function: get_hst of type BUILTIN
+2025/06/03 15:23:00 Delegating built-in function 'get_hst' to comprehensive handler
+2025/06/03 15:23:00 Executing built-in function: get_hst
+2025/06/03 15:23:00 Checking built-in function name: 'get_hst' (lower: 'get_hst')
+2025/06/03 15:23:00 Executing get_hst function
+2025/06/03 15:23:00 HST rate for postal code: 0
+2025/06/03 15:23:00 Rule get_hst_rate executed successfully
+2025/06/03 15:23:00 Executing rule definition: get_pst_rate (type: Standard)
+2025/06/03 15:23:00 Rule get_pst_rate conditions met: true
+2025/06/03 15:23:00 Executing 1 actions for rule get_pst_rate
+2025/06/03 15:23:00 Executing action function 4
+2025/06/03 15:23:00 Executing function: get_pst of type BUILTIN
+2025/06/03 15:23:00 Delegating built-in function 'get_pst' to comprehensive handler
+2025/06/03 15:23:00 Executing built-in function: get_pst
+2025/06/03 15:23:00 Checking built-in function name: 'get_pst' (lower: 'get_pst')
+2025/06/03 15:23:00 Executing get_pst function
+2025/06/03 15:23:00 PST rate for postal code: 0
+2025/06/03 15:23:00 Rule get_pst_rate executed successfully
+2025/06/03 15:23:00 Executing node 4 of type rule-group
+2025/06/03 15:23:00 Executing rule group with 2 rules using AND logic
+2025/06/03 15:23:00 Executing rule definition: calculate_gst_amount (type: Standard)
+2025/06/03 15:23:00 Rule calculate_gst_amount conditions met: true
+2025/06/03 15:23:00 Executing 1 actions for rule calculate_gst_amount
+2025/06/03 15:23:00 Executing action function 6
+2025/06/03 15:23:00 Executing function: calculate_tax_amount of type BUILTIN
+2025/06/03 15:23:00 Delegating built-in function 'calculate_tax_amount' to comprehensive handler
+2025/06/03 15:23:00 Executing built-in function: calculate_tax_amount
+2025/06/03 15:23:00 Checking built-in function name: 'calculate_tax_amount' (lower: 'calculate_tax_amount')
+2025/06/03 15:23:00 Executing calculate_tax_amount function
+2025/06/03 15:23:00 Tax calculation: base=100, rate=0.05, amount=5
+2025/06/03 15:23:00 Rule calculate_gst_amount executed successfully
+2025/06/03 15:23:00 Executing rule definition: calculate_pst_amount (type: Standard)
+2025/06/03 15:23:00 Rule calculate_pst_amount conditions met: true
+2025/06/03 15:23:00 Executing 1 actions for rule calculate_pst_amount
+2025/06/03 15:23:00 Executing action function 6
+2025/06/03 15:23:00 Executing function: calculate_tax_amount of type BUILTIN
+2025/06/03 15:23:00 Delegating built-in function 'calculate_tax_amount' to comprehensive handler
+2025/06/03 15:23:00 Executing built-in function: calculate_tax_amount
+2025/06/03 15:23:00 Checking built-in function name: 'calculate_tax_amount' (lower: 'calculate_tax_amount')
+2025/06/03 15:23:00 Executing calculate_tax_amount function
+2025/06/03 15:23:00 Tax calculation: base=100, rate=0.05, amount=5
+2025/06/03 15:23:00 Rule calculate_pst_amount executed successfully
+2025/06/03 15:23:00 Executing node 5 of type end
+2025/06/03 15:23:00 Executing end node 5

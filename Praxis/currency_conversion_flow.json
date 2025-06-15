@@ -1,0 +1,270 @@
+{
+  "flow_id": 10,
+  "flow_name": "Currency Conversion Flow",
+  "description": "Convert amount from one currency to another with validation and calculation",
+  "version": 1,
+  "created_at": "2025-01-06 10:00:00",
+  "metadata": {
+    "source": "manual",
+    "transformed_at": "2025-01-06T10:00:00.000000",
+    "author": "system",
+    "tags": ["finance", "currency", "conversion"]
+  },
+  "nodes": [
+    {
+      "node_id": 100,
+      "node_type": "validation",
+      "name": "Validate Input",
+      "reference_id": 1001,
+      "parent_node_id": null,
+      "position": {
+        "x": 100.0,
+        "y": 50.0
+      },
+      "size": {
+        "width": 180.0,
+        "height": 90.0
+      },
+      "config": {
+        "validation_rules": [
+          {
+            "field": "amount",
+            "type": "number",
+            "required": true,
+            "min": 0,
+            "error_message": "Amount must be a positive number"
+          },
+          {
+            "field": "from_currency",
+            "type": "string",
+            "required": true,
+            "pattern": "^[A-Z]{3}$",
+            "error_message": "From currency must be 3-letter ISO code"
+          },
+          {
+            "field": "to_currency",
+            "type": "string",
+            "required": true,
+            "pattern": "^[A-Z]{3}$",
+            "error_message": "To currency must be 3-letter ISO code"
+          }
+        ]
+      },
+      "created_at": "2025-01-06 10:00:00",
+      "updated_at": "2025-01-06 10:00:00"
+    },
+    {
+      "node_id": 101,
+      "node_type": "api-call",
+      "name": "Get Exchange Rate",
+      "reference_id": 1002,
+      "parent_node_id": null,
+      "position": {
+        "x": 350.0,
+        "y": 50.0
+      },
+      "size": {
+        "width": 180.0,
+        "height": 90.0
+      },
+      "config": {
+        "endpoint": "https://api.exchangerate-api.com/v4/latest/${from_currency}",
+        "method": "GET",
+        "headers": {
+          "Accept": "application/json"
+        },
+        "timeout": 10,
+        "retry": 2,
+        "response_mapping": {
+          "exchange_rate": "rates.${to_currency}"
+        }
+      },
+      "created_at": "2025-01-06 10:00:00",
+      "updated_at": "2025-01-06 10:00:00"
+    },
+    {
+      "node_id": 102,
+      "node_type": "calculation",
+      "name": "Calculate Converted Amount",
+      "reference_id": 1003,
+      "parent_node_id": null,
+      "position": {
+        "x": 600.0,
+        "y": 50.0
+      },
+      "size": {
+        "width": 180.0,
+        "height": 90.0
+      },
+      "config": {
+        "calculations": [
+          {
+            "field": "converted_amount",
+            "formula": "amount * exchange_rate",
+            "precision": 2
+          },
+          {
+            "field": "conversion_date",
+            "formula": "NOW()"
+          },
+          {
+            "field": "conversion_info",
+            "formula": "CONCAT(amount, ' ', from_currency, ' = ', converted_amount, ' ', to_currency)"
+          }
+        ]
+      },
+      "created_at": "2025-01-06 10:00:00",
+      "updated_at": "2025-01-06 10:00:00"
+    },
+    {
+      "node_id": 103,
+      "node_type": "transformation",
+      "name": "Format Output",
+      "reference_id": 1004,
+      "parent_node_id": null,
+      "position": {
+        "x": 850.0,
+        "y": 50.0
+      },
+      "size": {
+        "width": 180.0,
+        "height": 90.0
+      },
+      "config": {
+        "output_format": {
+          "success": true,
+          "data": {
+            "original_amount": "${amount}",
+            "from_currency": "${from_currency}",
+            "to_currency": "${to_currency}",
+            "exchange_rate": "${exchange_rate}",
+            "converted_amount": "${converted_amount}",
+            "conversion_info": "${conversion_info}",
+            "timestamp": "${conversion_date}"
+          }
+        }
+      },
+      "created_at": "2025-01-06 10:00:00",
+      "updated_at": "2025-01-06 10:00:00"
+    }
+  ],
+  "connections": [
+    {
+      "connection_id": 201,
+      "source_node_id": 100,
+      "target_node_id": 101,
+      "connection_type": "SUCCESS",
+      "condition": "",
+      "label": "Valid Input",
+      "config": {}
+    },
+    {
+      "connection_id": 202,
+      "source_node_id": 101,
+      "target_node_id": 102,
+      "connection_type": "SUCCESS",
+      "condition": "",
+      "label": "Rate Retrieved",
+      "config": {}
+    },
+    {
+      "connection_id": 203,
+      "source_node_id": 102,
+      "target_node_id": 103,
+      "connection_type": "SUCCESS",
+      "condition": "",
+      "label": "Amount Calculated",
+      "config": {}
+    }
+  ],
+  "rules": [
+    {
+      "rule_id": 1001,
+      "rule_name": "Input Validation Rule",
+      "rule_type": "VALIDATION",
+      "rule_logic": {
+        "conditions": [
+          {
+            "field": "amount",
+            "operator": ">=",
+            "value": 0
+          },
+          {
+            "field": "from_currency",
+            "operator": "matches",
+            "pattern": "^[A-Z]{3}$"
+          },
+          {
+            "field": "to_currency",
+            "operator": "matches",
+            "pattern": "^[A-Z]{3}$"
+          }
+        ]
+      }
+    }
+  ],
+  "rule_groups": [],
+  "execution_config": {
+    "async_mode": false,
+    "timeout_seconds": 30,
+    "max_retries": 3,
+    "parallel_execution": false,
+    "error_handling": {
+      "on_validation_error": "stop",
+      "on_api_error": "retry",
+      "on_calculation_error": "stop"
+    }
+  },
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "amount": {
+        "type": "number",
+        "description": "Amount to convert"
+      },
+      "from_currency": {
+        "type": "string",
+        "description": "Source currency code (e.g., USD)"
+      },
+      "to_currency": {
+        "type": "string",
+        "description": "Target currency code (e.g., EUR)"
+      }
+    },
+    "required": ["amount", "from_currency", "to_currency"]
+  },
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "success": {
+        "type": "boolean"
+      },
+      "data": {
+        "type": "object",
+        "properties": {
+          "original_amount": {
+            "type": "number"
+          },
+          "from_currency": {
+            "type": "string"
+          },
+          "to_currency": {
+            "type": "string"
+          },
+          "exchange_rate": {
+            "type": "number"
+          },
+          "converted_amount": {
+            "type": "number"
+          },
+          "conversion_info": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
